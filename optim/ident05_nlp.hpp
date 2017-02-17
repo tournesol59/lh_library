@@ -21,7 +21,7 @@ using namespace Ipopt;
  * s.t. discrete equality from ode:
  *      dx/dt=g(x,u,t)		discretized in: xk+1=g_(x1..xk,u1..uk)
  *      y=h(x,t) + v(t)		discretized in: yk=h(xk)+vk
- *      1/N*Sum{ vi^2 } = q
+ *      
  * AND: at each ipopt iteration
  *      x~k+1=Ak*x~k+Bk*udata,k +EKF*(ydata,k-Ck*x~k)
  *      Ak,Bk,Ck are from a linearization routine

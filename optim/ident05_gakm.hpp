@@ -32,13 +32,26 @@ public:
 
   /** default destructor */
   virtual ~IDENT05_GAKM();
-
+   
+  /** Methods to calculate the Legendre Polynoms */
+  float eval_leg_pol(int order, float t);  // order goes up to 6
   /** Method to prepare the calculus of integrals and interpolate the input u */
   bool set_gakm_data();
 
-  /** Methods to solve the VanderPol problem and only in that scope */
-  bool prepare_gakm_pb();
-  bool inverse_gakm_mat();
+  /** Methods to solve the VanderPol problem and only in that scope
+   * shall be called in eval_g() Ipopt method: */
+  bool get_gakm_invec_trans method(int order, int ma, int N,
+		                  numbers* u_t,
+				  numbers* u_phi); //uphi has dims 1x(ma*order)
+  bool set_gakm_matvec_VdP(int order, int ma, int,
+		              numbers* mat_phi, numbers* vec_phi); //specific to VanderPol Problem
+  bool eval_gakm_coeff_trans_xi(int order, int ma
+		              number* evalm_leg,
+			      numbers* time_vec);
+
+//  bool prepare_gakm_pb();
+//  bool inverse_gakm_mat();
+//
   /** Methods to display output solution in state vector form + coeff at each time quantiz unit */
   bool print_gakm_out(std::ftream fileout);
 
@@ -53,7 +66,8 @@ private:
   float * l0, l1, l2, l3, l4, l5, l6;
 
   /** an array for each state of the VanderPol model */
-  int vec_st_len;
+  float final_time=2.0; // from 0 to 2 sec
+  int vec_st_len=200; // for 2sec, also named N in comments
   float tsample=0.01;
   float * states1;
   float * states2;
@@ -62,8 +76,9 @@ private:
   /** an array for the 6th order approximation of x(t) and dx(t)/dt */
   /**  first a quantized time that is a multiple of tsample */
   float tquantiz=0.1;
-  int vec_phi_len;
+  int num_ranges = 20; // also named ma in comments
   int order = 6;
+  int vec_phi_len = 6*20; // order*ma gives the length of the Legendre coeff vector
   /** the integrated solution coefficients, corresponding to a Legendre approximation */
   float * integPol1;
   float * integPol2;

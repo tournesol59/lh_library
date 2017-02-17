@@ -6,7 +6,8 @@
 //
 // Authors:  Carl Laird, Andreas Waechter     IBM    2005-08-16
 
-#include "hs071_nlp.hpp"
+#include "ident05_nlp.hpp"
+#include "ident05_gakm.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -14,15 +15,15 @@
 using namespace Ipopt;
 
 // constructor
-HS071_NLP::HS071_NLP()
+IDENT05_NLP::IDENT05_NLP()
 {}
 
 //destructor
-HS071_NLP::~HS071_NLP()
+IDENT05_NLP::~IDENT05_NLP()
 {}
 
 // returns the size of the problem
-bool HS071_NLP::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
+bool IDENT05_NLP::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
                              Index& nnz_h_lag, IndexStyleEnum& index_style)
 {
   // The problem described in HS071_NLP.hpp has 4 variables, x[0] through x[3]
@@ -45,7 +46,7 @@ bool HS071_NLP::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
 }
 
 // returns the variable bounds
-bool HS071_NLP::get_bounds_info(Index n, Number* x_l, Number* x_u,
+bool IDENT05_NLP::get_bounds_info(Index n, Number* x_l, Number* x_u,
                                 Index m, Number* g_l, Number* g_u)
 {
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
@@ -79,7 +80,7 @@ bool HS071_NLP::get_bounds_info(Index n, Number* x_l, Number* x_u,
 }
 
 // returns the initial point for the problem
-bool HS071_NLP::get_starting_point(Index n, bool init_x, Number* x,
+bool IDENT05_NLP::get_starting_point(Index n, bool init_x, Number* x,
                                    bool init_z, Number* z_L, Number* z_U,
                                    Index m, bool init_lambda,
                                    Number* lambda)
@@ -101,7 +102,7 @@ bool HS071_NLP::get_starting_point(Index n, bool init_x, Number* x,
 }
 
 // returns the value of the objective function
-bool HS071_NLP::eval_f(Index n, const Number* x, bool new_x, Number& obj_value)
+bool IDENT05_NLP::eval_f(Index n, const Number* x, bool new_x, Number& obj_value)
 {
   assert(n == 4);
 
@@ -111,7 +112,7 @@ bool HS071_NLP::eval_f(Index n, const Number* x, bool new_x, Number& obj_value)
 }
 
 // return the gradient of the objective function grad_{x} f(x)
-bool HS071_NLP::eval_grad_f(Index n, const Number* x, bool new_x, Number* grad_f)
+bool IDENT05_NLP::eval_grad_f(Index n, const Number* x, bool new_x, Number* grad_f)
 {
   assert(n == 4);
 
@@ -132,11 +133,15 @@ bool HS071_NLP::eval_g(Index n, const Number* x, bool new_x, Index m, Number* g)
   g[0] = x[0] * x[1] * x[2] * x[3];
   g[1] = x[0]*x[0] + x[1]*x[1] + x[2]*x[2] + x[3]*x[3];
 
+  // replace above by a call to get_gakm_invec_trans method
+  // then set_gakm_matvec_linear() method
+  // finally eval_gakm_coeff_trans_xi() method
+
   return true;
 }
 
 // return the structure or values of the jacobian
-bool HS071_NLP::eval_jac_g(Index n, const Number* x, bool new_x,
+bool IDENT05_NLP::eval_jac_g(Index n, const Number* x, bool new_x,
                            Index m, Index nele_jac, Index* iRow, Index *jCol,
                            Number* values)
 {
@@ -179,7 +184,7 @@ bool HS071_NLP::eval_jac_g(Index n, const Number* x, bool new_x,
 }
 
 //return the structure or values of the hessian
-bool HS071_NLP::eval_h(Index n, const Number* x, bool new_x,
+bool IDENT05_NLP::eval_h(Index n, const Number* x, bool new_x,
                        Number obj_factor, Index m, const Number* lambda,
                        bool new_lambda, Index nele_hess, Index* iRow,
                        Index* jCol, Number* values)
@@ -243,7 +248,7 @@ bool HS071_NLP::eval_h(Index n, const Number* x, bool new_x,
   return true;
 }
 
-void HS071_NLP::finalize_solution(SolverReturn status,
+void IDENT05_NLP::finalize_solution(SolverReturn status,
                                   Index n, const Number* x, const Number* z_L, const Number* z_U,
                                   Index m, const Number* g, const Number* lambda,
                                   Number obj_value,
