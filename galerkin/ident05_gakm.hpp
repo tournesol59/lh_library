@@ -26,11 +26,11 @@
 #include "../include/lhTypes.hpp"
 #include "../MathFunctions/MathFunctions.h"
 #include <fstream>
-#include <iostream>
+//#include <iostream>
 #include <math.h>
 #include <malloc.h>  //<map>?
-
-//using namespace lhlib;
+//using namespace std;
+using namespace lhlib;
 
 class IDENT05_GAKM
 {
@@ -74,7 +74,13 @@ private:
   Number p2_om_copy;
 
   /** second the 6order Legendre polynoms should be init */
-  Number* l0, l1, l2, l3, l4, l5, l6;
+  Number l0[7];
+  Number l1[7];
+  Number l2[7];
+  Number l3[7];
+  Number l4[7];
+  Number l5[7];
+  Number l6[7];
 
   /** an array for each state of the VanderPol model */
   Number final_time; // from 0 to 2 sec
@@ -124,6 +130,7 @@ private:
   IDENT05_GAKM(const IDENT05_GAKM&);
   IDENT05_GAKM& operator=(const IDENT05_GAKM&);
   //@}
+};
 #endif
 
 

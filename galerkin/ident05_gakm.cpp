@@ -26,7 +26,7 @@
 #define __TEST_GAKM_ONLY__
 #endif
 
-using namespace std;
+//using namespace std;
 using namespace lhlib;
 
 /** attemps to access optimization parameters via macros */
@@ -45,13 +45,7 @@ IDENT05_GAKM::IDENT05_GAKM()
    p2_om_copy=4;
 #endif
 
-  l0=malloc(7*sizeof(Number));
-  l1=malloc(7*sizeof(Number));
-  l2=malloc(7*sizeof(Number));
-  l3=malloc(7*sizeof(Number));
-  l4=malloc(7*sizeof(Number));
-  l5=malloc(7*sizeof(Number));
-  l6=malloc(7*sizeof(Number));
+/*  l0=(Number)malloc(7*sizeof(Number)); */
 
    l0[0]=1.0; l0[1]=0.0; l0[2]=0.0; l0[3]=0.0; l0[4]=0.0; l0[5]=0.0; l0[6]=0.0;
    l1[0]=0.0; l1[1]=1.0; l1[2]=0.0; l1[3]=0.0; l1[4]=0.0; l1[5]=0.0; l1[6]=0.0;
@@ -74,19 +68,19 @@ IDENT05_GAKM::IDENT05_GAKM()
    vdp_gamma = 0.01;
 }
 
-IDENT05_GAKM::eval_leg_pol(int order, int len, Number* tvec, Number* out)   // order goes up to 6
+bool IDENT05_GAKM::eval_leg_pol(int order, int len, Number* tvec, Number* out)   // order goes up to 6
 {
    int i;
-   double result;
+   Number result;
    for (i=0; i<=len; i++) {
-       switch case (order) {
+       switch (order) {
 	  case 0:	   result= l0[0];
 	     		   break;
    	  case 1: 	   result= l1[0]+pow(tvec[i],1)*l1[1];
 	      		   break;
 	  case 2: 	   result= l2[0]+pow(tvec[i],1)*l2[1]+pow(tvec[i],2)*l2[2];
 	      		   break;
-	  case 3:      result= l3[0]+pow(tvec[i],1)*l3[1]+pow(tvec[i],2)*l3[2]+pow(tvec[i],3)*l3[3];
+	  case 3:          result= l3[0]+pow(tvec[i],1)*l3[1]+pow(tvec[i],2)*l3[2]+pow(tvec[i],3)*l3[3];
 	     	           break;
 	  case 4:	   result= l4[0]+pow(tvec[i],1)*l4[1]+pow(tvec[i],2)*l4[2]+pow(tvec[i],3)*l4[3]+pow(tvec[i],4)*l4[4];
 	     	           break;
@@ -104,24 +98,24 @@ IDENT05_GAKM::~IDENT05_GAKM()
 {}
   /** Methods to solve the VanderPol problem and only in that scope
    * shall be called in eval_g() Ipopt method: */
-IDENT05_GAKM::get_gakm_invec_trans_method(int order, int ma, int N,
+bool IDENT05_GAKM::get_gakm_invec_trans_method(int order, int ma, int N,
 		                  Number* u_t,
 				  Number* u_phi)
 { //uphi has dims 1x(ma*order)
 // algorithm to compute <u(t),leg[k](t)>=c_phi(k)
   int i,j,k,n;
-  Number* t, dt, dt_1, a, b;
-  Number* t_vec,u_vec, phi_vec; // time-vectors time and legendre evaluation
-  Number*  sum;
+  Number t, dt, dt_1, a, b;
+  Number* t_vec;
+  Number* u_vec;
+  Number* phi_vec; // time-vectors time and legendre evaluation
+  Number  sum;
 
   dt=tsample;
   n=N/ma;  // recalculated
 
-  sum=malloc(order*sizeof(Number));
-  t_vec=malloc(n*sizeof(Number));
-  u_vec=malloc(n*sizeof(Number));  
-  phi_vec=malloc(n*sizeof(Number));
-
+  t_vec= (Number*)malloc(n*sizeof(Number));
+  u_vec= (Number*)malloc(n*sizeof(Number));  
+  phi_vec= (Number*)malloc(n*sizeof(Number));
 
   for (j=0;j<ma;j++) {
       a=j*tquantiz;
@@ -137,8 +131,8 @@ IDENT05_GAKM::get_gakm_invec_trans_method(int order, int ma, int N,
 
       for (k=0;k<=order;k++) {
 	      // compute phi_vec, evaluation of Legendre,k at t_vec times in [-1,1]
-	  eval_leg_pol(k, n, &tvec, &phi_vec);
-	  sum = myComputeScalarProduct(n, tvec, &u_vec, &phi_vec);
+	  eval_leg_pol(k, n, t_vec, phi_vec);
+	  sum = myComputeScalarProduct(n, t_vec, u_vec, phi_vec);
           switch(k) {
 			case 0: u_phi[j*order+k]=sum*0.5;
 				break;   
@@ -151,9 +145,9 @@ IDENT05_GAKM::get_gakm_invec_trans_method(int order, int ma, int N,
 				break;
 			case 4: u_phi[j*order+k]=sum*4.5;
 				break;
-			case 5: u_phi[j*order+k]=sum[5]*5.5;
+			case 5: u_phi[j*order+k]=sum*5.5;
 				break;
-			case 6: u_phi[j*order+k]=sum[6]*6.5;
+			case 6: u_phi[j*order+k]=sum*6.5;
 				break;
 	}
       }//end order
@@ -162,14 +156,14 @@ IDENT05_GAKM::get_gakm_invec_trans_method(int order, int ma, int N,
    return 0;   
 }
 
-IDENT05_GAKM::get_gakm_iterative_avg_and_corr(int order, int ma, int N,
+bool IDENT05_GAKM::get_gakm_iterative_avg_and_corr(int order, int ma, int N,
 		                  Number* xi, Number* zi, 
 				  Number* avgX2, Number* corrXz)
 {
 
   Number eps, ohm0;
   int i,j,k;
-  double sumX2, sumXz;
+  Number sumX2, sumXz;
   //------------------- explanation:-------------------
   // set the average and correlation Number needed to linearize the VdP equation system
   // IPOPT take an array of Number simply called 'x' (no matter xi, zi in our functions) 
@@ -185,24 +179,24 @@ IDENT05_GAKM::get_gakm_iterative_avg_and_corr(int order, int ma, int N,
   j=0;
   k=0;
   for (i=0;i<N;i++) {
-	sumX2+= (xi[i])^2;
+	sumX2+= pow(xi[i],(Number)(2.0));
 	sumXz+= (xi[i])*(zi[k]);
 	j++; // then dxi/dt[]
 	j++; // then xi[+1]
 	k++; // then dzi/dt[]
 	k++; // then zi[+1]
   }
-  avgX2=double(sumX2)/double(N);  // conv to Number can also be used
-  corrXz=double(sumXz)/double(N);
+  avgX2[0]=((Number) (sumX2))/((Number) (N));  // conv to Number can also be used
+  corrXz[0]=((Number) (sumXz))/((Number)(N));
 
-  if (j<2*N) || (k<2*N) {
+  if ((j<2*N) || (k<2*N)) {
 	  return 0; }
   else {
 	  return -1; } // detect segment. error
 
 }
 
-IDENT05_GAKM::set_gakm_matvec_VdP(int order, int ma, int N,
+bool IDENT05_GAKM::set_gakm_matvec_VdP(int order, int ma, int N,
 		              Number* mat_phi, Number* vec_phi) 
 {
    //specific to VanderPol Problem
@@ -214,13 +208,13 @@ IDENT05_GAKM::set_gakm_matvec_VdP(int order, int ma, int N,
 
 
 
-};
+}
 
-IDENT05_GAKM::eval_gakm_coeff_trans_xi(int order, int ma,
+bool IDENT05_GAKM::eval_gakm_coeff_trans_xi(int order, int ma,
 		              Number* evalm_leg,
 			      Number* time_vec) 
 {
    // VanderMonde Matrix of evaluation coeff of legendre polynomials
 
-};
+}
 
