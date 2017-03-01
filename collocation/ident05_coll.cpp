@@ -32,7 +32,7 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 
 /* Input File Name */
   lenFileNameInp = 15;
-  std::strcpy(FileNameInp, strFileNameInp, lenFileNameInp);
+  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);
 
 /*  t0=(Number)malloc(7*sizeof(Number)); */
   t0[0]=1.0;t0[1]=0.0;t0[2]=0.0;t0[3]=0.0;t0[4]=0.0;t0[5]=0.0;t0[6]=0.0;
@@ -52,16 +52,19 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 IDENT05_COLL::~IDENT05_COLL() 
 {
 }
-bool IDDENT05_COLL::read_parse_file() 
+bool IDENT05_COLL::read_parse_file() 
 {
    Index i;
-   char * ReadLine[39];
-/* Open the input file, which is a text file with 3 columns */
-  ifstream lh_file("ThisFileInp.in");  // test w/o variable Name
-  lh_file.open();
-  for (i=0; i<43; i++) {
-     lh_file >> ReadLine;
-     cout << "i= " << i << "  " << ReadLine;
+   char ReadC;
+   /* Open the input file, which is a text file with 3 columns */
+  std::ifstream lh_file;
+  lh_file.open("ThisFileInp.in", std::ifstream::in);  // test w/o variable Name
+  ReadC=lh_file.get();
+  i=1;
+  while (lh_file.good()) {
+     ReadC=lh_file.get();
+     std::cout << "i= " << i << "  " << ReadC;
+     i=i+1;
   }
    lh_file.close();
 }

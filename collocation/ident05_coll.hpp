@@ -9,10 +9,12 @@
  * LIEBHERR TOULOUSE
  *******************************************************/
 #include "../include/lhTypes.hpp"
-#include "ident05_coll.hpp"
 #include <cassert>
 #include <iostream>
-#include <fsteam>
+#include <fstream>
+#include <malloc.h>
+#include <cstdio>
+#include <cstring>
 
 #ifndef __IDENT05_COLL_HPP__
 #define __IDENT05_COLL_HPP__
@@ -40,13 +42,13 @@ class IDENT05_COLL {
       char * strFileNameInp;
       Index lenFileNameInp;
 	   //Chebyshev polynoms
-      Number * t0[7];
-      Number * t1[7];
-      Number * t2[7];
-      Number * t3[7];
-      Number * t4[7];
-      Number * t5[7];
-      Number * t6[7];
+      Number t0[7];
+      Number t1[7];
+      Number t2[7];
+      Number t3[7];
+      Number t4[7];
+      Number t5[7];
+      Number t6[7];
 	  //dimension of the problem
       Index order;      //order of interpolation, also called N in comments
       Index num_ranges;  //also called ma
@@ -56,8 +58,6 @@ class IDENT05_COLL {
       Number * d_t;
       Number * d_ut;
       Number * d_yt;
-
-}
 
 };
 #endif
