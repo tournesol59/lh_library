@@ -33,7 +33,7 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 /* Input File Name */
   lenFileNameInp = 15;
   strncpy(strFileNameInp, FileNameInp, lenFileNameInp);
-
+  std::cout << "Have input file name: " << strFileNameInp << "\n";
 /*  t0=(Number)malloc(7*sizeof(Number)); */
   t0[0]=1.0;t0[1]=0.0;t0[2]=0.0;t0[3]=0.0;t0[4]=0.0;t0[5]=0.0;t0[6]=0.0;
   t1[0]=0.0;t1[1]=1.0;t1[2]=0.0;t1[3]=0.0;t1[4]=0.0;t1[5]=0.0;t1[6]=0.0;
@@ -56,7 +56,7 @@ bool IDENT05_COLL::read_parse_file()
 {
    Index i;
    char ReadC;
-   /* Open the input file, which is a text file with 3 columns */
+   // Open the input file, which is a text file with 3 columns
   std::ifstream lh_file;
   lh_file.open("ThisFileInp.in", std::ifstream::in);  // test w/o variable Name
   ReadC=lh_file.get();
@@ -67,6 +67,8 @@ bool IDENT05_COLL::read_parse_file()
      i=i+1;
   }
    lh_file.close();
+
+   return 0;
 }
 
 bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()

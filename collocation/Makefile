@@ -1,25 +1,21 @@
-CC=/usr/bin/gcc
+CC=/usr/bin/g++
 CXXFLAGS=-Wall -O2
 CINCLUDE=../include/
 #../../../Ipopt-3.12.6/include/coin/
 LIBS=-lm
 
-OBJ=../MathFunctions/myComputeScalarProduct.o \
-  ../galerkin/ident05_gakm.o \
-  ident05_test.o
+OBJ=../collocation/ident05_coll.o \
+  main_example.o
 
-ident05_test: ident05_test.cpp
-	${CC} ${CXXFLAGS} -o ident05_test.o -c $< -I${CINCLUDE}
+main_example: main_example.cpp 
+	${CC} ${CXXFLAGS} -o main_example.o -c $< -I${CINCLUDE}
 
-myComputeScalarProduct: ../MathFunctions/myComputeScalarProduct.cpp
-	${CC} ${CXXFLAGS} -o ../MathFunctions/myComputeScalarProduct.o -c $<
-
-ident05_gakm: ../galerkin/ident05_gakm.cpp
-	${CC} ${CXXFLAGS} -o ../galerkin/ident05_gakm.o -c $< -I${CINCLUDE}
+ident05_coll: ../collocation/ident05_coll.cpp
+	${CC} ${CXXFLAGS} -o ../collocation/ident05_coll.o -c $< -I${CINCLUDE}
 
 main: ${OBJ}
-	${CC} ${CXXFLAGS} -o ident05_test -I${CINCLUDE} ${OBJ} ${LIBS}
+	${CC} ${CXXFLAGS} -o main_example -I${CINCLUDE} ${OBJ} ${LIBS}
 
 clean:
-	rm -rf ../MathFunctions/*.o ../galerkin/*.o ident05_test
+	rm -rf ../collocation/*.o main_example 
 

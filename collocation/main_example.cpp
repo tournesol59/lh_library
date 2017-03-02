@@ -7,18 +7,22 @@
 *********************************************************************************************/
 
 #include "ident05_coll.hpp"
+#include <memory>  // for Smart Ptr
 
 using namespace lhlib;
 
-int main() {
-  char * strFileName[15];
-  int lenFileName = 12;
-  // open a class as Smart Pointer
-  strFileName = "ThisFileInp.in";  
-  SmartPtr<IDENT05_COLL> cnClassIns(new IDENT05_COLL(6, strFileName));
+int main(int argc, char ** argv) {
+  char strFileName[14];
+  int lenFileName=14;
+  strncpy(strFileName, argv[1], 8);  // 8 < 14 but works do not touch anything!
+//  strFileName = "ThisFile";  //prohibited, call $ ./main_example "ThisFile"  instead
+  std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1]\n";
 
-  cnClassInst->read_parse_file();
-  
-  
+// open a class as Smart Pointer
+//  auto_ptr<IDENT05_COLL> cnClassInst(new IDENT05_COLL(1, 6, strFileName)); // does not work yet
+//  cnClassInst->read_parse_file();
+  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
+  cnClassInst.read_parse_file();
+
 }
 

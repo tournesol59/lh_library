@@ -15,6 +15,7 @@
 #include <malloc.h>
 #include <cstdio>
 #include <cstring>
+//#include <string.h>
 
 #ifndef __IDENT05_COLL_HPP__
 #define __IDENT05_COLL_HPP__
