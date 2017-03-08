@@ -1,5 +1,6 @@
 CC=/usr/bin/g++
-CXXFLAGS=-Wall -O2
+CXXFLAGS= -std=c++11 -Wall -O2
+# std C++11 thus
 CINCLUDE=../include/
 #../../../Ipopt-3.12.6/include/coin/
 LIBS=-lm

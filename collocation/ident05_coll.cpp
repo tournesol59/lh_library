@@ -25,14 +25,12 @@ using namespace lhlib;
 // constructor
 IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 {
-  Index i;
-
 /*eqn Problem type: */
   type_eqn=typode;
 
 /* Input File Name */
-  lenFileNameInp = 15;
-  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);
+  lenFileNameInp = 8;  // do not change this value
+  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
   std::cout << "Have input file name: " << strFileNameInp << "\n";
 /*  t0=(Number)malloc(7*sizeof(Number)); */
   t0[0]=1.0;t0[1]=0.0;t0[2]=0.0;t0[3]=0.0;t0[4]=0.0;t0[5]=0.0;t0[6]=0.0;
@@ -54,17 +52,28 @@ IDENT05_COLL::~IDENT05_COLL()
 }
 bool IDENT05_COLL::read_parse_file() 
 {
-   Index i;
-   char ReadC;
-   // Open the input file, which is a text file with 3 columns
+   Index row,col;
+ //  char ReadC[39];  // 39 seems to be the largest character's number in a line
+
+// Open the input file, which is a text file with 3 columns
   std::ifstream lh_file;
-  lh_file.open("ThisFileInp.in", std::ifstream::in);  // test w/o variable Name
-  ReadC=lh_file.get();
-  i=1;
-  while (lh_file.good()) {
-     ReadC=lh_file.get();
-     std::cout << "i= " << i << "  " << ReadC;
-     i=i+1;
+  lh_file.open("TheFile", std::ifstream::in);  // test w/o variable Name
+  
+  row=0;
+  while (!lh_file.eof()) {
+//  while (lh_file.good()) {
+      std::string line; 
+      std::getline(lh_file, line);    
+    
+      std::stringstream ss(line);
+      col = 0;
+      while(ss >> dataarray[row][col]) col++;
+
+      std::cout << "tf= "  << dataarray[row][0] << " ";
+      std::cout << "utf= " << dataarray[row][1] << " ";
+      std::cout << "ytf= " << dataarray[row][2] << "\n";
+     
+      row++;
   }
    lh_file.close();
 
@@ -73,8 +82,8 @@ bool IDENT05_COLL::read_parse_file()
 
 bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 {
-   Index i,j,k;
+ //  Index i,j,k;
 
    return 0;
 }
-
+ 

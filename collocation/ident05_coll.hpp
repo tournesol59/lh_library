@@ -11,11 +11,12 @@
 #include "../include/lhTypes.hpp"
 #include <cassert>
 #include <iostream>
+#include <istream>
+#include <sstream>
 #include <fstream>
 #include <malloc.h>
 #include <cstdio>
 #include <cstring>
-//#include <string.h>
 
 #ifndef __IDENT05_COLL_HPP__
 #define __IDENT05_COLL_HPP__
@@ -40,7 +41,7 @@ class IDENT05_COLL {
    private:
       	   // Ordinary Differential equation
       Index type_eqn;  // 1. Linear2 single coeff 2. Linear2 with polynom up to deg 2; 
-      char * strFileNameInp;
+      char strFileNameInp[14];
       Index lenFileNameInp;
 	   //Chebyshev polynoms
       Number t0[7];
@@ -56,9 +57,7 @@ class IDENT05_COLL {
       Index num_total_coeffs; //shall be initialized to N*ma
 
       // Content from InputData read
-      Number * d_t;
-      Number * d_ut;
-      Number * d_yt;
+      Number dataarray[2000][3];
 
 };
 #endif
