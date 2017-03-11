@@ -41,6 +41,9 @@ class IDENT05_COLL {
    private:
       	   // Ordinary Differential equation
       Index type_eqn;  // 1. Linear2 single coeff 2. Linear2 with polynom up to deg 2; 
+      Number equ1[3];
+      Number equ2[9];
+
       char strFileNameInp[14];
       Index lenFileNameInp;
 	   //Chebyshev polynoms
@@ -51,13 +54,15 @@ class IDENT05_COLL {
       Number t4[7];
       Number t5[7];
       Number t6[7];
+
+      Number t7[8]; //for completion
 	  //dimension of the problem
       Index order;      //order of interpolation, also called N in comments
       Index num_ranges;  //also called ma
       Index num_total_coeffs; //shall be initialized to N*ma
 
       // Content from InputData read
-      Number dataarray[2000][3];
+      Number dataarray[2000][3]; //  0 = t, 1 = ut, 2 = yt
 
 };
 #endif

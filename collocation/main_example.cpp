@@ -1,8 +1,8 @@
 /********************************************************************************************
 * The aim is to test the collocation method, this time not through Ipopt on the equations
-*    y'' + 1/2*y' + 1/4*y = 0  (1) with y(0)=0 y'(0)=1
+*    y'' + 1/2*y' + 16*y = 0  (1) with y(0)=0 y'(0)=1
 * then
-*    y'' + 4*y = u(t)          (2) with y(0)=1 y'(0)=0
+*    ty''+ y' + t*y = u(t)          (2) with y(0)=1 y'(0)=0
 *
 *********************************************************************************************/
 
@@ -23,6 +23,7 @@ int main(int argc, char ** argv) {
 //  cnClassInst->read_parse_file();
   IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
   cnClassInst.read_parse_file();
+  cnClassInst.ExpandSeriesLinearSys_ref1();
 
 }
 
