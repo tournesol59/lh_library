@@ -9,6 +9,9 @@
  * LIEBHERR TOULOUSE
  *******************************************************/
 #include "../include/lhTypes.hpp"
+#include "../MathFunctions/MathFunctions.h"
+//#include "../../../CLAPACK/INCLUDE/clapack.h"
+//#include <stdio.h>
 #include <cassert>
 #include <iostream>
 #include <istream>
@@ -17,6 +20,7 @@
 #include <malloc.h>
 #include <cstdio>
 #include <cstring>
+#include <math.h>
 
 #ifndef __IDENT05_COLL_HPP__
 #define __IDENT05_COLL_HPP__
@@ -37,13 +41,17 @@ class IDENT05_COLL {
 
       // sets the linear system of relation:
       bool ExpandSeriesLinearSys_ref1();
-      
+      bool SolveSeriesLinearSys_ref1();
+
+      Number evalChebyshevPolynom(Number t, Index i);
+
    private:
       	   // Ordinary Differential equation
       Index type_eqn;  // 1. Linear2 single coeff 2. Linear2 with polynom up to deg 2; 
       Number equ1[3];
       Number equ2[9];
-
+      Number boundry[2]; // x0 and dx0
+      
       char strFileNameInp[14];
       Index lenFileNameInp;
 	   //Chebyshev polynoms
@@ -61,8 +69,11 @@ class IDENT05_COLL {
       Index num_ranges;  //also called ma
       Index num_total_coeffs; //shall be initialized to N*ma
 
+      Number A_l1[81];
+      Number B_l1[9];
+
       // Content from InputData read
       Number dataarray[2000][3]; //  0 = t, 1 = ut, 2 = yt
-
+      Number solarray[2000]; //yt_approx
 };
 #endif

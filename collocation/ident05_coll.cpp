@@ -29,7 +29,8 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
   type_eqn=typode;
   equ1[0]=16.0; equ1[1]=0.5; equ1[2]=1.0;  //  (y"+0.5*y'+16y=0)
   equ2[0]=0.0;equ2[1]=1.0;equ2[2]=0.0;  equ2[3]=1.0;equ2[4]=0.0;equ2[5]=0.0; equ2[6]=0.0;equ2[7]=1.0;equ2[8]=0.0;  //  (xy"+y'+xy=0) Bessel
- 
+ boundry[0]=0.0;
+ boundry[1]=1.0;
 
 /* Input File Name */
   lenFileNameInp = 8;  // do not change this value
@@ -161,8 +162,10 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
                case 5:  
 			Fk[i][j]=t5[i]*equ1[1];
 			break;
-             //case 6: 
-             }
+               case 6: 
+                        Fk[i][j]=0.0; 
+			break;  
+           }
          }//endif 
       }//end for j
       Fk[i][order]=0.0;  // fill the unused part of the matrix with zero
@@ -203,17 +206,20 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
 // step2: replace terms F(H in F) => K
    trunc_order=order-2;
-   
+   for (i=0;i<=order;i++) {
+      for (j=0;j<=order;j++) {
+	   Kk[i][j]=Fk[i][j];
+      }
+   }
    for (i=0;i<=order;i++) { //i is corresp. to terms X^i
       // 2*j*Bj=Dj-1 - Dj+1
       for (j=0;j<=order-2;j++) {
-          if (abs(Hk[i][j]) > 1.0E-10) {
+          if (fabs(Hk[i][j]) > 1.0E-10) {
              if (j==0) {
-		   Kk[i][j+1]=Fk[i][j+1]+2*Hk[i][j];
+		   Kk[i][j+1]=Kk[i][j+1]+2*Hk[i][j];
 	     }
 	     else {
-		Kk[i][j+1]=Fk[i][j+1];
-		for (k=1;k<=trunc_order;k++) {
+		for (k=j;k<=trunc_order;k=k+2) {
 		   Kk[i][k+1]=Kk[i][k+1]+(2*k)*Hk[i][j];
 
 		}
@@ -225,15 +231,57 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
 // step3: replace terms E(K in E) => M
    trunc_order=order-1;
+   for (i=0;i<=order;i++) {
+      for (j=0;j<=order;j++) {
+	   Mk[i][j]=Ek[i][j];
+      }
+   }
    for (i=0;i<=order;i++) { //i is corresp. to terms X^i
-      Mk[i][1]=Ek[i][1]+2*Kk[i][j+1]; 
-      for (j=0;j<=order;j++) {//j corresp. to coeff Ai//Bi (order) in Chebyshev Sum
-         Mk[i][j]=Ek[i][j]; 
-         for (k=0;k<=trunc_order;k++) { //2*i*Ai=Bi-1 - Bi+1 inversed by series of sums 
-              Mk[i][j]=Mk[i][j]+(2*k)*Kk[i][j+1];
-         }//end for k
-      }// end for j
+      // 2*j*Bj=Dj-1 - Dj+1
+      for (j=0;j<=order-1;j++) {
+          if (fabs(Kk[i][j]) > 1.0E-10) {
+             if (j==0) {
+		   Mk[i][j+1]=Mk[i][j+1]+2*Kk[i][j];
+	     }
+	     else {
+		for (k=j;k<=trunc_order;k=k+2) {
+		   Mk[i][k+1]=Mk[i][k+1]+(2*k)*Kk[i][j];
+		}
+	    }
+          }
+      }
    }//end for i
+
+
+//prepare for solving with lapack
+   for (i=0; i<=order; i++) {
+      for (j=0; j<=order; j++) {
+	A_l1[j*(order+2)+i]=Mk[i][j]; //transpose and pass to an array for Clapack
+      }
+      A_l1[(order+1)*(order+2)+i]=-Rk[0][i];
+      A_l1[(order+2)*(order+2)+i]=-Rk[1][i];
+   }
+   for (j=0; j<=order; j=j+2) {
+       A_l1[j*(order+2)+(order+1)]=1.0;
+   }
+   for (j=1; j<=order-1; j=j+2) {
+       A_l1[j*(order+2)+(order+1)]=-1.0;
+   }
+// last row of boundary by hand:
+  A_l1[0*(order+2)+(order+2)]=0.0;
+  A_l1[1*(order+2)+(order+2)]=2.0;
+  A_l1[2*(order+2)+(order+2)]=-4.0;
+  A_l1[3*(order+2)+(order+2)]=6.0;
+  A_l1[4*(order+2)+(order+2)]=-16.0;
+  A_l1[5*(order+2)+(order+2)]=20.0;
+  A_l1[6*(order+2)+(order+2)]=-36.0;
+
+   for (j=0; j<=order; j++) {
+       B_l1[j]=0.0;
+   }
+   B_l1[order+1]=boundry[0];
+   B_l1[order+2]=boundry[1];
+//end matrices for Clapack
 
 #define __TEST_COLL_ONLY__
 #ifdef __TEST_COLL_ONY__
@@ -292,4 +340,53 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
    return 0;
 }
+
+bool IDENT05_COLL::SolveSeriesLinearSys_ref1() 
+{
+   int n, rhs, lda, ldb, info;
+   int ipiv[9];
  
+   n=order+2;
+   rhs=1;
+   lda=n;
+   ldb=n;
+   info=1;
+ 
+   // call to ../MathFunctions/mySolveLinearLapack.c
+   mySolveLinearLapack(n,rhs,A_l1,lda,ipiv,B_l1,ldb,info);
+ 
+   //should try to display the solution in solarray[2000] points:
+
+}
+
+Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
+{
+  int j;
+  Number sum;
+  sum=0.0;
+  for (j=0;j<=order;j++) {
+     switch(j) {
+	case 0:
+		sum=sum+t0[j]*pow(t,j);
+		break;
+	case 1:
+		sum=sum+t1[j]*pow(t,j);
+		break;
+	case 2:
+		sum=sum+t2[j]*pow(t,j);
+		break;
+	case 3:
+		sum=sum+t3[j]*pow(t,j);
+		break;
+	case 4:
+		sum=sum+t4[j]*pow(t,j);
+		break;
+	case 5:
+		sum=sum+t5[j]*pow(t,j);
+		break;
+	case 6:
+		sum=sum+t6[j]*pow(t,j);
+		break;	
+     }
+  }
+}

@@ -14,6 +14,7 @@ using namespace lhlib;
 int main(int argc, char ** argv) {
   char strFileName[14];
   int lenFileName=14;
+
   strncpy(strFileName, argv[1], 8);  // 8 < 14 but works do not touch anything!
 //  strFileName = "ThisFile";  //prohibited, call $ ./main_example "ThisFile"  instead
   std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1]\n";
@@ -24,6 +25,7 @@ int main(int argc, char ** argv) {
   IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
   cnClassInst.read_parse_file();
   cnClassInst.ExpandSeriesLinearSys_ref1();
+  cnClassInst.SolveSeriesLinearSys_ref1();
 
 }
 
