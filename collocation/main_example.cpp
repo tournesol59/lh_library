@@ -24,8 +24,8 @@ int main(int argc, char ** argv) {
 //  cnClassInst->read_parse_file();
   IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
   cnClassInst.read_parse_file();
-  cnClassInst.ExpandSeriesLinearSys_ref1();
-  cnClassInst.SolveSeriesLinearSys_ref1();
-
+//  cnClassInst.ExpandSeriesLinearSys_ref1();
+//  cnClassInst.SolveSeriesLinearSys_ref1();
+    cnClassInst.SolveNumRangesSys_ref1();
 }
 

@@ -46,8 +46,10 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
   t6[0]=-1.0;t6[1]=0.0;t6[2]=18.0;t6[3]=0.0;t6[4]=-48.0;t6[5]=0.0;t6[6]=32.0;
 
   t7[0]=0.0; t7[1]=-7.0; t7[2]=0.0; t7[3]=56.0; t7[4]=0.0; t7[5]=-112.0; t7[6]=0.0; t7[7]=64.0;
-  order=ord;
-  num_ranges=1;
+  order=ord; //6
+  tinit=0.0;
+  tend=2.0;
+  num_ranges=4;
   num_total_coeffs=(order+1)*num_ranges;
 
 }
@@ -76,7 +78,10 @@ bool IDENT05_COLL::read_parse_file()
 #ifdef __COLL_TEST_ONLY__
       std::cout << "tf= "  << dataarray[row][0] << " ";
       std::cout << "utf= " << dataarray[row][1] << " ";
-      std::cout << "ytf= " << dataarray[row][2] << "\n";
+      std::cout << "ytf= " << dataarray[row][2] << " ";
+      std::cout << "c2f= " << dataarray[row][3] << " ";
+      std::cout << "c1f= " << dataarray[row][4] << " ";
+      std::cout << "c0f= " << dataarray[row][5] << "\n";
 #endif
       row++;
   }
@@ -354,9 +359,88 @@ bool IDENT05_COLL::SolveSeriesLinearSys_ref1()
  
    // call to ../MathFunctions/mySolveLinearLapack.c
    mySolveLinearLapack(n,rhs,A_l1,lda,ipiv,B_l1,ldb,info);
- 
-   //should try to display the solution in solarray[2000] points:
+return 0;
+}
 
+bool IDENT05_COLL::SolveNumRangesSys_ref1()
+{
+   Index k, j;
+   Number t, x, times_end[5];
+   Number boundary_all[8];
+   Number equ_all[12];
+
+//   times_end = (double*) malloc(5*sizeof(Number));  
+
+   boundary_all[0]=boundry[0];
+   boundary_all[1]=boundry[1];
+
+//   equ_all[0]=equ1[0];
+//   equ_all[1]=equ1[1];
+//   equ_all[2]=equ1[2];
+
+   for (k=0; k<4; k++) {
+       // iterate on intervals
+       times_end[k]=tinit + k*(tend-tinit)/num_ranges;
+       times_end[k+1]=tinit+(k+1)*(tend-tinit)/num_ranges;
+	// import equation coefficients
+       equ_all[3*k]=dataarray[k*10+0][3];
+       equ_all[3*k+1]=dataarray[k*10+1][4];
+       equ_all[3*k+2]=dataarray[k*10+2][5];
+	// correction of interval size
+       equ_all[3*k]=equ_all[3*k]*(1); 
+       equ_all[3*k+1]=equ_all[3*k+1]*(2/(times_end[k+1]-times_end[k]));
+       equ_all[3*k+2]=equ_all[3*k+2]*pow(  (2/(times_end[k+1]-times_end[k])), 2);
+
+       boundry[0]=boundary_all[2*k];
+       boundry[1]=boundary_all[2*k+1];
+
+        // call to form the system
+       ExpandSeriesLinearSys_ref1();
+	// now the system is set in matrices A_l1, B_l1
+       SolveSeriesLinearSys_ref1();
+	// now the system is solved in matrices B_l1
+       for (j=0;j<7;j++) {
+           //copy the result from B_l1
+           coeffarray[7*k+j]=B_l1[j];
+       }
+	//copy the result to form the new boundary
+       boundary_all[2*(k+1)]=evalCollocation(1.0, B_l1);
+       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
+	//evaluate the result of the solution in solarray vector
+       for (j=0; j<10; j++) {
+           x=-1+2/9*j;
+           t=(times_end[2*k+1]-times_end[2*k])/2.0*x + (times_end[2*k+1]+times_end[2*k])/2.0;
+	   solarray[10*k+j][0]=t;
+	   solarray[10*k+j][1]=evalCollocation(x, B_l1);
+       }
+   }
+   //should try to display the solution
+
+  int row;
+  std::ofstream lh_test;
+  lh_test.open("TheTest", std::ofstream::out);  // test w/o variable Name
+  
+  row=0;
+  while (row<40) {
+//  while (lh_test.good()) {
+
+      lh_test << "tf= "  << solarray[row][0] << " ";
+      lh_test << "ytf= " << solarray[row][1] << "\n";
+      row++;
+  }
+   lh_test.close();
+  return 0;
+}
+
+Number IDENT05_COLL::evalCollocation(Number t, Number * coeff) 
+{
+  int j;
+  Number sum;
+  sum=0.0;
+  for (j=0;j<=order;j++) {
+     sum=sum+coeff[j]*evalChebyshevPolynom(t,j);
+  }
+  return sum;
 }
 
 Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
@@ -389,4 +473,5 @@ Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
 		break;	
      }
   }
+  return sum;
 }
