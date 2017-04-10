@@ -1,5 +1,10 @@
-#include "MathFunctions.h"
-#include <stdio.h>
+//#include "MathFunctions.h"
+extern "C" int mySolveLinearLapack(int n, int rhs, double * A, int lda, int * ipiv, double * B, int ldb, int info);
+
+//#include <stdio.h>
+#include <cstdio>
+#include <iostream>
+#include <istream>
 
 int main() {
  double a[4*4]={1, 2, 3, 4, 1, 4, 9, 16, 1, 8, 27, 64, 1, 16, 81, 256};
@@ -15,7 +20,7 @@ int main() {
  if (!mySolveLinearLapack(n, rhs, a, lda, ipiv, b, ldb, info)) {
   
     for (i=0;i<4;i++) {
-      printf("b[%d]= %f\n", i, b[i]);
+      std::cout << "b[" << i << "]= " <<  b[i] << "\n";
     }
  }  
  else {

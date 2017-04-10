@@ -2,16 +2,15 @@ CC=/usr/bin/g++
 CANSI=/usr/bin/gcc
 CXXFLAGS= -std=c++11 -Wall -O2
 CANSIFLAGS= -Wall -O2
-#INCCLAPK=/home/frederic/CLAPACK/INCLUDE
-INCLAPACKE=/home/frederic/gitrep/ThirdParty/lapack/LAPACKE/include
-LOADER=/usr/bin/gcc
+LOADER=/usr/bin/g++
 LOADOPTS='-O3'
 
-TMGLIB=/home/frederic/gitrep/ThirdParty/lapack/libtmglib.a
-LAPACKLIB=/home/frederic/gitrep/ThirdParty/lapack/liblapack.a
-BLASLIB=/home/frederic/gitrep/ThirdParty/lapack/librefblas.a
-#F2CLIB=/home/frederic/CLAPACK/F2CLIBS/libf2c.a
-LAPACKELIB=/home/frederic/gitrep/ThirdParty/lapack/liblapacke.a
+LAPACKELIB=/home/frederic/lapack-3.7.0/liblapacke.a
+
+INCLAPACKE=/home/frederic/lapack-3.7.0/LAPACKE/include
+TMGLIB=/usr/local/lib/libtmglib.a
+LAPACKLIB=/usr/local/lib/liblapack.a
+BLASLIB=/usr/local/lib/libblas.a
 
 # std C++11 thus
 CINCLUDE=../include/
@@ -34,9 +33,7 @@ mySolveLinearLapack: ../MathFunctions/mySolveLinearLapack.c
 
 #main no ref to std=c++11 !
 main: ${OBJ}
-	${LOADER} ${LOADOPTS} -o main_example -I${CINCLUDE} ${OBJ} \ 
-	${LAPACKELIB}  ${LAPACKLIB} ${BLASLIB} ${TMGLIB} -lgfortran \ 
-	${LIBS}
+	${LOADER} ${LOADOPTS} -o main_example -I${CINCLUDE} ${OBJ} ${LAPACKELIB}  ${LAPACKLIB} ${BLASLIB} ${TMGLIB} -lgfortran ${LIBS}
 
 clean:
 	rm -rf ../collocation/*.o ../MathFunctions/mySolveLinearLapack.o main_example 

@@ -9,7 +9,9 @@
  * LIEBHERR TOULOUSE
  *******************************************************/
 #include "../include/lhTypes.hpp"
-#include "../MathFunctions/MathFunctions.h"
+#include "../MathFunctions/MathFunctions.hpp"
+//extern "C" int mySolveLinearLapack(int n, int rhs, double * A, int lda, int * ipiv, double * B, int ldb, int info);
+
 //#include "../../../CLAPACK/INCLUDE/clapack.h"
 //#include <stdio.h>
 #include <cassert>
@@ -74,6 +76,7 @@ class IDENT05_COLL {
       Index order;      //order of interpolation, also called N in comments, order=6 is implemented
       Number tinit,tend;
       Index num_ranges;  //also called ma, should be equal to 4
+      Index num_points;  // points per range
       Index num_total_coeffs; //shall be initialized to N*ma
 
       Number A_l1[81];  // matrix (order+3)*(order+3)

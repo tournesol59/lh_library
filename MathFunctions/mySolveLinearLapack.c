@@ -1,8 +1,7 @@
-#include "MathFunctions.h"
-//#include "/home/frederic/CLAPACK/INCLUDE/f2c.h"
+//#include "MathFunctions.h"
 #include <stdio.h>
 #include <malloc.h>
-#include "/home/frederic/gitrep/ThirdParty/lapack/LAPACKE/include/lapacke.h"
+#include "/home/frederic/lapack-3.7.0/LAPACKE/include/lapacke.h"
 
 
 //#define SIZE 9
@@ -30,5 +29,11 @@ int mySolveLinearLapack(int n, int rhs, double * A, int lda, int * ipiv, double 
 //  for (i=0; i<n; i++) {
 //     printf("\n b[ %d ] = %f", i, B[i] );
 //  }
-  return 0;
+  if (INFO==1) {
+    printf("LAPACK ERROR: dgesv has not found a solution\n");
+    return -1; 
+ }
+ else {
+    return 0;
+ }
 }

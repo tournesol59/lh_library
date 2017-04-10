@@ -26,6 +26,6 @@ int main(int argc, char ** argv) {
   cnClassInst.read_parse_file();
 //  cnClassInst.ExpandSeriesLinearSys_ref1();
 //  cnClassInst.SolveSeriesLinearSys_ref1();
-    cnClassInst.SolveNumRangesSys_ref1();
+  cnClassInst.SolveNumRangesSys_ref1();
 }
 

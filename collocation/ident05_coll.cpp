@@ -49,7 +49,8 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
   order=ord; //6
   tinit=0.0;
   tend=2.0;
-  num_ranges=4;
+  num_ranges=2;
+  num_points=20;
   num_total_coeffs=(order+1)*num_ranges;
 
 }
@@ -60,14 +61,13 @@ IDENT05_COLL::~IDENT05_COLL()
 bool IDENT05_COLL::read_parse_file() 
 {
    Index row,col;
- //  char ReadC[39];  // 39 seems to be the largest character's number in a line
 
 // Open the input file, which is a text file with 3 columns
   std::ifstream lh_file;
   lh_file.open("TheFile", std::ifstream::in);  // test w/o variable Name
   
   row=0;
-  while (!lh_file.eof()) {
+  while ((!lh_file.eof()) && (row<41)) {
 //  while (lh_file.good()) {
       std::string line; 
       std::getline(lh_file, line);    
@@ -75,7 +75,7 @@ bool IDENT05_COLL::read_parse_file()
       std::stringstream ss(line);
       col = 0;
       while(ss >> dataarray[row][col]) col++;
-#ifdef __COLL_TEST_ONLY__
+#ifndef __TEST_COLL_ONLY__
       std::cout << "tf= "  << dataarray[row][0] << " ";
       std::cout << "utf= " << dataarray[row][1] << " ";
       std::cout << "ytf= " << dataarray[row][2] << " ";
@@ -99,8 +99,8 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
    Number Rk[7][2];
    Number Kk[7][7];
    Number Mk[7][7];
-
-// step1: create system: H*Di+F*Bi+E*Ai=0
+  std::cout << "Expanding equation: " << equ1[2] << "*Y'' +" << equ1[1] << "*Y' +" << equ1[0] << "*Y = 0 \n";
+// step1: create system: H*Di+F*Bi+E*Ai=R
     for (i=0;i<=order;i++) { //i is corresp. to terms X^i
        //corresp. to coeff Taui (order) in Chebyshev Sum of contins term 
        Rk[i][0]=t5[i];
@@ -141,7 +141,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
       }//end for j
    }//end for i
 
-   //terms of matrix Fk corresponds to continuous term
+   //terms of matrix Fk corresponds to first derivative term
    for (i=0;i<=order;i++) { //i is corresp. to terms X^i
       for (j=0;j<=order-1;j++) { //j corresp. to coeff Bi (order-1) in Chebyshev Sum of derivative term 
          if (i>j) {
@@ -176,7 +176,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
       Fk[i][order]=0.0;  // fill the unused part of the matrix with zero
    }//end for i
 
-   //terms of matrix Hk corresponds to continuous term
+   //terms of matrix Hk corresponds to second derivative term
    for (i=0;i<=order;i++) { //i is corresp. to terms X^i
       for (j=0;j<=order-1;j++) { //j corresp. to coeff Di (order-2) in Chebyshev Sum of 2nd derivative term 
          if (i>j) {
@@ -234,7 +234,8 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
       
    }//end for i
 
-// step3: replace terms E(K in E) => M
+// step3: replace terms E(K in E) => M now have the system: H*Di+F*Bi+E*Ai=0 into M*Ai=R
+
    trunc_order=order-1;
    for (i=0;i<=order;i++) {
       for (j=0;j<=order;j++) {
@@ -261,25 +262,43 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 //prepare for solving with lapack
    for (i=0; i<=order; i++) {
       for (j=0; j<=order; j++) {
-	A_l1[j*(order+2)+i]=Mk[i][j]; //transpose and pass to an array for Clapack
+	A_l1[j*(order+3)+i]=Mk[i][j]; //transpose and pass to an array for Clapack
       }
-      A_l1[(order+1)*(order+2)+i]=-Rk[0][i];
-      A_l1[(order+2)*(order+2)+i]=-Rk[1][i];
+      A_l1[(order+1)*(order+3)+i]=-Rk[i][0];
+      A_l1[(order+2)*(order+3)+i]=-Rk[i][1];
    }
+/***********
    for (j=0; j<=order; j=j+2) {
-       A_l1[j*(order+2)+(order+1)]=1.0;
+       A_l1[j*(order+3)+(order+1)]=1.0;
    }
    for (j=1; j<=order-1; j=j+2) {
-       A_l1[j*(order+2)+(order+1)]=-1.0;
+       A_l1[j*(order+3)+(order+1)]=-1.0;
    }
+*********/
 // last row of boundary by hand:
-  A_l1[0*(order+2)+(order+2)]=0.0;
-  A_l1[1*(order+2)+(order+2)]=2.0;
-  A_l1[2*(order+2)+(order+2)]=-4.0;
-  A_l1[3*(order+2)+(order+2)]=6.0;
-  A_l1[4*(order+2)+(order+2)]=-16.0;
-  A_l1[5*(order+2)+(order+2)]=20.0;
-  A_l1[6*(order+2)+(order+2)]=-36.0;
+  A_l1[0*(order+3)+(order+1)]=1;
+  A_l1[1*(order+3)+(order+1)]=-1;
+  A_l1[2*(order+3)+(order+1)]=1;
+  A_l1[3*(order+3)+(order+1)]=-1;
+  A_l1[4*(order+3)+(order+1)]=1;
+  A_l1[5*(order+3)+(order+1)]=-1;
+  A_l1[6*(order+3)+(order+1)]=1;
+
+
+// last row of boundary by hand:
+  A_l1[0*(order+3)+(order+2)]=0.0;
+  A_l1[1*(order+3)+(order+2)]=2.0;
+  A_l1[2*(order+3)+(order+2)]=-4.0;
+  A_l1[3*(order+3)+(order+2)]=6.0;
+  A_l1[4*(order+3)+(order+2)]=-16.0;
+  A_l1[5*(order+3)+(order+2)]=20.0;
+  A_l1[6*(order+3)+(order+2)]=-36.0;
+
+//check the four last col-row are equal to zero:
+  A_l1[7*(order+3)+(order+1)]=0.0; 
+  A_l1[7*(order+3)+(order+2)]=0.0; 
+  A_l1[8*(order+3)+(order+1)]=0.0; 
+  A_l1[8*(order+3)+(order+2)]=0.0; 
 
    for (j=0; j<=order; j++) {
        B_l1[j]=0.0;
@@ -288,8 +307,8 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
    B_l1[order+2]=boundry[1];
 //end matrices for Clapack
 
-#define __TEST_COLL_ONLY__
 #ifdef __TEST_COLL_ONY__
+
 // display matrices for debug:
   std::cout <<"Content of matrix Rk for debug: \n"; 
   for (i=0;i<=order;i++) {
@@ -299,7 +318,6 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
      }
     std::cout << "\n";
   }
-#else 
   std::cout <<"Content of matrix Ek for debug: \n" ;
   for (i=0;i<=order;i++) {
      std::cout << "Ei= "<< i <<" ";
@@ -324,6 +342,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
      }
     std::cout << "\n";
   }
+
   std::cout <<"Content of matrix Kk for debug: \n" ;
   for (i=0;i<=order;i++) {
      std::cout << "Ki= "<< i <<" ";
@@ -341,6 +360,16 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
     std::cout << "\n";
   }
 
+  std::cout <<"Content of matrix A_l1 for debug: \n" ;
+  for (j=0;j<=order+2;j++) {
+     std::cout << "Aj= "<< j <<" ";
+     for (i=0;i<=order+2;i++) {
+        std::cout << " " << A_l1[j+i*(order+3)];
+     }
+    std::cout << "\n";
+  }
+
+
 #endif //end test code
 
    return 0;
@@ -351,7 +380,7 @@ bool IDENT05_COLL::SolveSeriesLinearSys_ref1()
    int n, rhs, lda, ldb, info;
    int ipiv[9];
  
-   n=order+2;
+   n=order+3;
    rhs=1;
    lda=n;
    ldb=n;
@@ -366,7 +395,8 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 {
    Index k, j;
    Number t, x, times_end[5];
-   Number boundary_all[8];
+   Number boundary_all[10]; 
+// 10 should be set to a variable index in the future as it corresponds to a number of points in a simulation intervall (10) and is time-sampling dependant
    Number equ_all[12];
 
 //   times_end = (double*) malloc(5*sizeof(Number));  
@@ -378,15 +408,15 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 //   equ_all[1]=equ1[1];
 //   equ_all[2]=equ1[2];
 
-   for (k=0; k<4; k++) {
+   for (k=0; k<num_ranges; k++) {
        // iterate on intervals
        times_end[k]=tinit + k*(tend-tinit)/num_ranges;
        times_end[k+1]=tinit+(k+1)*(tend-tinit)/num_ranges;
-	// import equation coefficients
-       equ_all[3*k]=dataarray[k*10+0][3];
-       equ_all[3*k+1]=dataarray[k*10+1][4];
-       equ_all[3*k+2]=dataarray[k*10+2][5];
-	// correction of interval size
+	// import equation coefficients, which are set in the Data TheFile.txt
+       equ_all[3*k+2]=dataarray[k*num_points+0][3];
+       equ_all[3*k+1]=dataarray[k*num_points+1][4];
+       equ_all[3*k]=dataarray[k*num_points+2][5];
+	// correction of equation coefficient, due to reduction of intervall size to -1..1:
        equ_all[3*k]=equ_all[3*k]*(1); 
        equ_all[3*k+1]=equ_all[3*k+1]*(2/(times_end[k+1]-times_end[k]));
        equ_all[3*k+2]=equ_all[3*k+2]*pow(  (2/(times_end[k+1]-times_end[k])), 2);
@@ -394,41 +424,64 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
        boundry[0]=boundary_all[2*k];
        boundry[1]=boundary_all[2*k+1];
 
+       equ1[0]=equ_all[3*k];
+       equ1[1]=equ_all[3*k+1];
+       equ1[2]=equ_all[3*k+2];
+      
         // call to form the system
        ExpandSeriesLinearSys_ref1();
 	// now the system is set in matrices A_l1, B_l1
        SolveSeriesLinearSys_ref1();
 	// now the system is solved in matrices B_l1
-       for (j=0;j<7;j++) {
+       for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
            //copy the result from B_l1
-           coeffarray[7*k+j]=B_l1[j];
+           coeffarray[(order+1)*k+j]=B_l1[j];
        }
+
+#ifndef __TEST_COLL_ONLY__
+        std::cout << " ****** Solution of Linear System: " << k << " c0=" << equ1[0] << " c1=" << equ1[1] << " c2=" << equ1[2] << ": ******** \n";
+        for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
+          // display the result
+           std::cout << coeffarray[(order+1)*k+j] << '\n';
+       }
+#endif           
 	//copy the result to form the new boundary
        boundary_all[2*(k+1)]=evalCollocation(1.0, B_l1);
-       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
+//       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
+       boundary_all[2*(k+1)+1]=0.0;
+
 	//evaluate the result of the solution in solarray vector
-       for (j=0; j<10; j++) {
-           x=-1+2/9*j;
-           t=(times_end[2*k+1]-times_end[2*k])/2.0*x + (times_end[2*k+1]+times_end[2*k])/2.0;
-	   solarray[10*k+j][0]=t;
-	   solarray[10*k+j][1]=evalCollocation(x, B_l1);
+       for (j=0; j<=num_points; j++) {
+           x=-1+2.0/float(num_points)*j;
+           t=(times_end[k+1]-times_end[k])/2.0*x + (times_end[k+1]+times_end[k])/2.0;  // is there an error?
+	   solarray[num_points*k+j][0]=t;
+	   solarray[num_points*k+j][1]=evalCollocation(x, B_l1); // x, not t
        }
-   }
+   } //end for k
    //should try to display the solution
 
   int row;
   std::ofstream lh_test;
   lh_test.open("TheTest", std::ofstream::out);  // test w/o variable Name
-  
   row=0;
   while (row<40) {
 //  while (lh_test.good()) {
-
-      lh_test << "tf= "  << solarray[row][0] << " ";
-      lh_test << "ytf= " << solarray[row][1] << "\n";
+      lh_test << solarray[row][0] << "\t";
+      lh_test << solarray[row][1] << "\n";
       row++;
   }
-   lh_test.close();
+  lh_test.close();
+
+#ifdef __TEST_COLL_ONLY__  
+  std::cout << " *************** This is the solution solved by collocation ****************** \n"; 
+  row=0;
+  while (row<40) {
+      std::cout << "tf= " << solarray[row][0] << " ";
+      std::cout << "ytf= " << solarray[row][1] << "\n";
+      row++;
+  }
+#endif
+
   return 0;
 }
 
