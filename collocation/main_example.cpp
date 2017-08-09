@@ -7,7 +7,7 @@
 *********************************************************************************************/
 
 #include "ident05_coll.hpp"
-#include <memory>  // for Smart Ptr
+#include <memory>  // for Smart Ptr: unique_ptr.h
 
 using namespace lhlib;
 
@@ -20,12 +20,16 @@ int main(int argc, char ** argv) {
   std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1]\n";
 
 // open a class as Smart Pointer
-//  auto_ptr<IDENT05_COLL> cnClassInst(new IDENT05_COLL(1, 6, strFileName)); // does not work yet
-//  cnClassInst->read_parse_file();
-  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
-  cnClassInst.read_parse_file();
+  std::auto_ptr<IDENT05_COLL> cnClassInst(new IDENT05_COLL(1, 6, strFileName)); // does not work yet
+  cnClassInst->read_parse_file();
+//  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
+//  cnClassInst.read_parse_file();
+
+// If Testing: Decompose:
 //  cnClassInst.ExpandSeriesLinearSys_ref1();
 //  cnClassInst.SolveSeriesLinearSys_ref1();
-  cnClassInst.SolveNumRangesSys_ref1();
+
+  cnClassInst->SolveNumRangesSys_ref1();
+//  cnClassInst.SolveNumRangesSys_ref1();
 }
 

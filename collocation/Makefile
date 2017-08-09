@@ -1,22 +1,21 @@
-CC=/usr/bin/g++
-CANSI=/usr/bin/gcc
+CC=/c/mingw/bin/mingw32-g++
+CANSI=/c/mingw/bin/mingw32-gcc
 CXXFLAGS= -std=c++11 -Wall -O2
 CANSIFLAGS= -Wall -O2
-LOADER=/usr/bin/g++
+LOADER=/c/mingw/bin/mingw32-g++
 LOADOPTS='-O3'
 
-LAPACKELIB=/home/frederic/lapack-3.7.0/liblapacke.a
+LAPACKELIB=/home/frede/lapack-3.7.1/liblapacke.a
 
-INCLAPACKE=/home/frederic/lapack-3.7.0/LAPACKE/include
-TMGLIB=/usr/local/lib/libtmglib.a
-LAPACKLIB=/usr/local/lib/liblapack.a
-BLASLIB=/usr/local/lib/libblas.a
+INCLAPACKE=/home/frede/lapack-3.7.1/LAPACKE/include
+TMGLIB=/lib/local/libtmglib.a
+LAPACKLIB=/lib/local/liblapack.a
+BLASLIB=/lib/local/librefblas.a
 
 # std C++11 thus
 CINCLUDE=../include/
 #../../../Ipopt-3.12.6/include/coin/
 LIBS=-lm \
-     -lc
 
 OBJ=../collocation/ident05_coll.o \
   main_example.o \

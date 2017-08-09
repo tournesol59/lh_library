@@ -27,8 +27,8 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 {
 /*eqn Problem type: */
   type_eqn=typode;
-  equ1[0]=16.0; equ1[1]=0.5; equ1[2]=1.0;  //  (y"+0.5*y'+16y=0)
-  equ2[0]=0.0;equ2[1]=1.0;equ2[2]=0.0;  equ2[3]=1.0;equ2[4]=0.0;equ2[5]=0.0; equ2[6]=0.0;equ2[7]=1.0;equ2[8]=0.0;  //  (xy"+y'+xy=0) Bessel
+  equ1[0]=1.0; equ1[1]=0.0;equ2[2]=1.0;
+  equ2[3]=1.0;equ2[4]=0.0;equ2[5]=0.0; equ2[6]=0.0;equ2[7]=1.0;equ2[8]=0.0;  //  (xy"+y'+xy=0) Bessel
  boundry[0]=0.0;
  boundry[1]=1.0;
 
@@ -287,12 +287,12 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
 // last row of boundary by hand:
   A_l1[0*(order+3)+(order+2)]=0.0;
-  A_l1[1*(order+3)+(order+2)]=2.0;
-  A_l1[2*(order+3)+(order+2)]=-4.0;
-  A_l1[3*(order+3)+(order+2)]=6.0;
-  A_l1[4*(order+3)+(order+2)]=-16.0;
-  A_l1[5*(order+3)+(order+2)]=20.0;
-  A_l1[6*(order+3)+(order+2)]=-36.0;
+  A_l1[1*(order+3)+(order+2)]=2.0;//2.0
+  A_l1[2*(order+3)+(order+2)]=0.0;//-4.0
+  A_l1[3*(order+3)+(order+2)]=0.0;//6.0
+  A_l1[4*(order+3)+(order+2)]=0.0;//-16.0
+  A_l1[5*(order+3)+(order+2)]=10.0;//20.0
+  A_l1[6*(order+3)+(order+2)]=0.0;//-36.0
 
 //check the four last col-row are equal to zero:
   A_l1[7*(order+3)+(order+1)]=0.0; 
@@ -307,7 +307,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
    B_l1[order+2]=boundry[1];
 //end matrices for Clapack
 
-#ifdef __TEST_COLL_ONY__
+#ifndef __TEST_COLL_ONY__
 
 // display matrices for debug:
   std::cout <<"Content of matrix Rk for debug: \n"; 
@@ -438,18 +438,19 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
            coeffarray[(order+1)*k+j]=B_l1[j];
        }
 
-#ifndef __TEST_COLL_ONLY__
+#ifdef __TEST_COLL_ONLY__
         std::cout << " ****** Solution of Linear System: " << k << " c0=" << equ1[0] << " c1=" << equ1[1] << " c2=" << equ1[2] << ": ******** \n";
+	std::cout << "    with boundary conditions: y0 " <<  boundry[0] << " and dy0 " <<  boundry[1] << " \n";
         for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
           // display the result
            std::cout << coeffarray[(order+1)*k+j] << '\n';
        }
 #endif           
 	//copy the result to form the new boundary
-       boundary_all[2*(k+1)]=evalCollocation(1.0, B_l1);
+       boundary_all[2*(k+1)]=0.0; //evalCollocation(1.0, B_l1);
 //       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
-       boundary_all[2*(k+1)+1]=0.0;
-
+       boundary_all[2*(k+1)+1]=1.0;// at constant problem and time intervall given
+   
 	//evaluate the result of the solution in solarray vector
        for (j=0; j<=num_points; j++) {
            x=-1+2.0/float(num_points)*j;
@@ -491,6 +492,9 @@ Number IDENT05_COLL::evalCollocation(Number t, Number * coeff)
   Number sum;
   sum=0.0;
   for (j=0;j<=order;j++) {
+#ifndef __TEST_COLL_ONLY__ 
+	std::cout << "coeff[" << j << "]= " << coeff[j] << "\n";
+#endif	  
      sum=sum+coeff[j]*evalChebyshevPolynom(t,j);
   }
   return sum;
@@ -502,7 +506,7 @@ Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
   Number sum;
   sum=0.0;
   for (j=0;j<=order;j++) {
-     switch(j) {
+     switch(i) {
 	case 0:
 		sum=sum+t0[j]*pow(t,j);
 		break;
