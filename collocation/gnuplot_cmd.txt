@@ -1,0 +1,6 @@
+#gnuplot for plotting control input (TheFile) versus simulation (collocation) output (TheTest):
+#in collocation directory:
+plot "./TheFile" using 2 with points, "./TheTest" using 2 with lines
+
+#if a simulation output reference is also present in the input File:
+plot "./TheFile" using 3 with points, "./TheTest" using 2 with lines

@@ -13,23 +13,22 @@ using namespace lhlib;
 
 int main(int argc, char ** argv) {
   char strFileName[14];
+  char strCodeName[14];
   int lenFileName=14;
 
   strncpy(strFileName, argv[1], 8);  // 8 < 14 but works do not touch anything!
-//  strFileName = "ThisFile";  //prohibited, call $ ./main_example "ThisFile"  instead
-  std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1]\n";
+//  strncpy(strCodeName, argv[2], 8);  // same thing
+//  strFileName = "TheFile";  //prohibited, call $ ./main_example "TheFile" "TheCode"  instead
+  std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1] and " << strCodeName << " as arg[2]\n";
 
-// open a class as Smart Pointer
-  std::auto_ptr<IDENT05_COLL> cnClassInst(new IDENT05_COLL(1, 6, strFileName)); // does not work yet
-  cnClassInst->read_parse_file();
-//  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName);
-//  cnClassInst.read_parse_file();
+  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName,strCodeName);
+  cnClassInst.read_parse_file();
+  cnClassInst.read_parse_code();
 
 // If Testing: Decompose:
-//  cnClassInst.ExpandSeriesLinearSys_ref1();
-//  cnClassInst.SolveSeriesLinearSys_ref1();
+  cnClassInst.ExpandSeriesLinearSys_ref1();
+  cnClassInst.SolveSeriesLinearSys_ref1();
 
-  cnClassInst->SolveNumRangesSys_ref1();
-//  cnClassInst.SolveNumRangesSys_ref1();
+  cnClassInst.SolveNumRangesSys_ref1();
 }
 

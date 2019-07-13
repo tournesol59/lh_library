@@ -23,7 +23,7 @@ using namespace lhlib;
 //#define P2_OM (ident05_nlp::get_p2_om)
 
 // constructor
-IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
+IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp, const char * CodeNameInp )
 {
 /*eqn Problem type: */
   type_eqn=typode;
@@ -35,7 +35,10 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 /* Input File Name */
   lenFileNameInp = 8;  // do not change this value
   strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
-  std::cout << "Have input file name: " << strFileNameInp << "\n";
+  std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
+ // strncpy(strCodeNameInp, CodeNameInp, lenFileNameInp);   // works on MInGW not on Linux
+ // std::cout << "Have input(2) file name: " << strCodeNameInp << "\n";
+
 /*  t0=(Number)malloc(7*sizeof(Number)); */
   t0[0]=1.0;t0[1]=0.0;t0[2]=0.0;t0[3]=0.0;t0[4]=0.0;t0[5]=0.0;t0[6]=0.0;
   t1[0]=0.0;t1[1]=1.0;t1[2]=0.0;t1[3]=0.0;t1[4]=0.0;t1[5]=0.0;t1[6]=0.0;
@@ -58,11 +61,12 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp )
 IDENT05_COLL::~IDENT05_COLL() 
 {
 }
+
 bool IDENT05_COLL::read_parse_file() 
 {
    Index row,col;
 
-// Open the input file, which is a text file with 3 columns
+// Open the input file, which is a text file with 6 columns
   std::ifstream lh_file;
   lh_file.open("TheFile", std::ifstream::in);  // test w/o variable Name
   
@@ -89,6 +93,96 @@ bool IDENT05_COLL::read_parse_file()
 
    return 0;
 }
+
+bool IDENT05_COLL::read_parse_code() {
+   int row, col;
+   Number doublearray[1][2];
+   Index intarray[1][2];
+/* *
+ * Open "TheCode" which is a parameter file with 6 rows of doublets:
+ * 1: int:bvp if (1)or ivp, order of Ti
+ * 2: prediction(1) or given boundry[1] if (0), repeat boundry or use once
+ * 3: double:boundry[0], boundry[1] as bvp or ivp
+ * 4: double:tinit,tend
+ * 5: int: num_ranges for calc, num_points for output
+ * 6: double:prediction[0] and preduction[1] (amplitude and period of sinusoide)
+ * */
+   std::ifstream lh_code;
+   lh_code.open("TheCode", std::ifstream::in);
+
+   row=0; col=0;
+
+   if (!(lh_code.eof()) && (row<1)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> intarray[0][col]) col++;
+      type_ovp=intarray[0][0];
+      order=intarray[0][1];      
+   }
+   row++;col=0;
+
+   if (!(lh_code.eof()) && (row<2)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> intarray[0][col]) col++;
+      type_predict=intarray[0][0];
+      repeat_predict=intarray[0][1];      
+   }
+   row++;col=0;
+
+   if (!(lh_code.eof()) && (row<3)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> doublearray[0][col]) col++;
+      boundry[0]=doublearray[0][0];
+      boundry[1]=doublearray[0][1];      
+   }   
+   row++;col=0;
+
+   if (!(lh_code.eof()) && (row<4)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> doublearray[0][col]) col++;
+      tinit=doublearray[0][0];
+      tend=doublearray[0][1];      
+   }
+   row++;col=0;
+
+   if (!(lh_code.eof()) && (row<5)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> intarray[0][col]) col++;
+      num_ranges=intarray[0][0];
+      num_points=intarray[0][1];      
+   }
+   row++;col=0;
+
+   if (!(lh_code.eof()) && (row<6)) {
+      std::string line;
+      std::getline(lh_code, line);
+      std::stringstream ss(line);  
+      while(ss >> doublearray[0][col]) col++;
+      predictparams[0]=doublearray[0][0];
+      predictparams[1]=doublearray[0][1];      
+   }
+   row++;col=0;
+#ifndef __TEST_COLL_ONLY__
+      std::cout << "type ovp problem= " << type_ovp << " , order problem= " << order << "\n";      
+      std::cout << "use prediction function= " << type_predict << " , repeat prediction all ranges= " << repeat_predict << "\n";       
+      std::cout << "initial time= " << tinit << " , tend= " << tend << "\n";
+      std::cout << "numranges= " << num_ranges << " , num points= " << num_points << "\n";
+      std::cout << "sinus prediction amplitude= " << predictparams[0] << "period= " << predictparams[1] << "\n";
+
+#endif
+   lh_code.close();
+   return 0;
+}
+
 
 bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 {
@@ -286,14 +380,24 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
 
 // last row of boundary by hand:
+  if (type_ovp==0) {
   A_l1[0*(order+3)+(order+2)]=0.0;
-  A_l1[1*(order+3)+(order+2)]=2.0;//2.0
-  A_l1[2*(order+3)+(order+2)]=0.0;//-4.0
-  A_l1[3*(order+3)+(order+2)]=0.0;//6.0
-  A_l1[4*(order+3)+(order+2)]=0.0;//-16.0
-  A_l1[5*(order+3)+(order+2)]=10.0;//20.0
-  A_l1[6*(order+3)+(order+2)]=0.0;//-36.0
-
+  A_l1[1*(order+3)+(order+2)]=1.0;//2.0//2.0
+  A_l1[2*(order+3)+(order+2)]=-4.0;//-4.0//0.0
+  A_l1[3*(order+3)+(order+2)]=9.0;//6.0//0.0
+  A_l1[4*(order+3)+(order+2)]=-16.0;//-16.0//0.0
+  A_l1[5*(order+3)+(order+2)]=25.0;//20.0//10.0
+  A_l1[6*(order+3)+(order+2)]=-36.0;//-36.0//0.0
+  }
+  else {
+  A_l1[0*(order+3)+(order+2)]=1.0;
+  A_l1[1*(order+3)+(order+2)]=1.0;
+  A_l1[2*(order+3)+(order+2)]=1.0;
+  A_l1[3*(order+3)+(order+2)]=1.0;
+  A_l1[4*(order+3)+(order+2)]=1.0;
+  A_l1[5*(order+3)+(order+2)]=1.0;
+  A_l1[6*(order+3)+(order+2)]=1.0;	  
+  } 
 //check the four last col-row are equal to zero:
   A_l1[7*(order+3)+(order+1)]=0.0; 
   A_l1[7*(order+3)+(order+2)]=0.0; 
@@ -400,10 +504,14 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
    Number equ_all[12];
 
 //   times_end = (double*) malloc(5*sizeof(Number));  
-
+ if (type_predict==0) {
    boundary_all[0]=boundry[0];
    boundary_all[1]=boundry[1];
-
+  }
+ else {
+   boundary_all[0]=0.0;
+   boundary_all[1]=predictparams[0]*sin(6.2831/predictparams[1]);
+ }
 //   equ_all[0]=equ1[0];
 //   equ_all[1]=equ1[1];
 //   equ_all[2]=equ1[2];
@@ -446,10 +554,13 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
            std::cout << coeffarray[(order+1)*k+j] << '\n';
        }
 #endif           
+   if (type_predict==0) {
+
 	//copy the result to form the new boundary
        boundary_all[2*(k+1)]=0.0; //evalCollocation(1.0, B_l1);
 //       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
        boundary_all[2*(k+1)+1]=1.0;// at constant problem and time intervall given
+   }  //else..
    
 	//evaluate the result of the solution in solarray vector
        for (j=0; j<=num_points; j++) {
