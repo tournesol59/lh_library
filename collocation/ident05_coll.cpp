@@ -23,10 +23,10 @@ using namespace lhlib;
 //#define P2_OM (ident05_nlp::get_p2_om)
 
 // constructor
-IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp, const char * CodeNameInp )
+IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * CodeNameInp )
 {
 /*eqn Problem type: */
-  type_eqn=typode;
+//  type_eqn=typode;
   equ1[0]=1.0; equ1[1]=0.0;equ2[2]=1.0;
   equ2[3]=1.0;equ2[4]=0.0;equ2[5]=0.0; equ2[6]=0.0;equ2[7]=1.0;equ2[8]=0.0;  //  (xy"+y'+xy=0) Bessel
  boundry[0]=0.0;
@@ -55,7 +55,8 @@ IDENT05_COLL::IDENT05_COLL(Index typode, Index ord, const char * FileNameInp, co
   num_ranges=2;
   num_points=20;
   num_total_coeffs=(order+1)*num_ranges;
-
+  predictparams[0]=1.0;
+  predictparams[1]=2.0;
 }
 
 IDENT05_COLL::~IDENT05_COLL() 
@@ -95,83 +96,84 @@ bool IDENT05_COLL::read_parse_file()
 }
 
 bool IDENT05_COLL::read_parse_code() {
-   int row, col;
+   int maxrow, row, col;
+   std::string tuple_t;
+//std::string tuple_t[1][2];
    Number doublearray[1][2];
    Index intarray[1][2];
 /* *
  * Open "TheCode" which is a parameter file with 6 rows of doublets:
- * 1: int:bvp if (1)or ivp, order of Ti
+ * 1: int:bvp if (1)or ivp, type of diff eqn
  * 2: prediction(1) or given boundry[1] if (0), repeat boundry or use once
  * 3: double:boundry[0], boundry[1] as bvp or ivp
  * 4: double:tinit,tend
  * 5: int: num_ranges for calc, num_points for output
- * 6: double:prediction[0] and preduction[1] (amplitude and period of sinusoide)
+ * 6: double:prediction[0] and prediction[1] (amplitude and period of sinusoide)
  * */
    std::ifstream lh_code;
    lh_code.open("TheCode", std::ifstream::in);
+   std::string line;
+   std::getline(lh_code, line);
+   std::stringstream ss(line);
+   ss >> maxrow;
+   std::cout << "have " << maxrow << "Code Parameters\n";
+   row=1;
+   std::div_t dv{}; dv.quot = row;
+   while ( (std::getline(lh_code, line)) && (row<2*maxrow+1) ) {
+      std::stringstream ss(line);
+      col=0;
+      dv.quot=row;
+      dv = std::div(dv.quot, 2);
+      std::vector<std::array<char, 8>> listchar;
+      std::string tuple_t0;
+      std::string tuple_t1;
 
-   row=0; col=0;
+      if (dv.rem) {     // odd rows: typ and name of params
+//        while (ss >> tuple_t[0][col]) col++;  // do not work for const char*
+          //std::istringstream input("INT:INIEQN:END");
 
-   if (!(lh_code.eof()) && (row<1)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> intarray[0][col]) col++;
-      type_ovp=intarray[0][0];
-      order=intarray[0][1];      
-   }
-   row++;col=0;
+          // note: the following loop terminates when std::ios_base::operator bool()
+          // on the stream returned from getline() returns false
+	  int count=1;
+          for (std::array<char, 8> ar; ss.getline(&ar[0], 8, ':'); ) {//stackoverflow$
+              listchar.push_back(ar);
+              switch(count) {
+                   case 1:
+	     		   tuple_t0=ar[0];
+		   case 2:
+			   tuple_t1=ar[0];
+	      }
+	      count++;
+          }
+          for (auto& ar :listchar) {
+               std::cout << &ar[0] << '\n';
+          }
+      std::cout << "type= " << tuple_t0 << " and name= " << tuple_t1 << "\n";	  
+      }//end odd rows
+      else { 
 
-   if (!(lh_code.eof()) && (row<2)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> intarray[0][col]) col++;
-      type_predict=intarray[0][0];
-      repeat_predict=intarray[0][1];      
-   }
-   row++;col=0;
+	      // odd rows: params values
+       if (tuple_t0=="INT") {
+         while (ss >> intarray[0][col]) col++;
+         if (tuple_t1=="IBVEQN") {
+           type_ovp = intarray[0][0];
+	   type_eqn = intarray[0][1];
+	 }	 
+       }
+       else if (tuple_t0=="DOU") {
+         while (ss >> doublearray[0][col]) col++;
+         if (tuple_t1=="INIEND") {
+	    tinit = doublearray[0][0];
+            tend  = doublearray[0][1];
+	 }
+       }
+      
+      }//end even rows, (if dv.rem)
+      row=row+2;
+   }//end while
 
-   if (!(lh_code.eof()) && (row<3)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> doublearray[0][col]) col++;
-      boundry[0]=doublearray[0][0];
-      boundry[1]=doublearray[0][1];      
-   }   
-   row++;col=0;
-
-   if (!(lh_code.eof()) && (row<4)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> doublearray[0][col]) col++;
-      tinit=doublearray[0][0];
-      tend=doublearray[0][1];      
-   }
-   row++;col=0;
-
-   if (!(lh_code.eof()) && (row<5)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> intarray[0][col]) col++;
-      num_ranges=intarray[0][0];
-      num_points=intarray[0][1];      
-   }
-   row++;col=0;
-
-   if (!(lh_code.eof()) && (row<6)) {
-      std::string line;
-      std::getline(lh_code, line);
-      std::stringstream ss(line);  
-      while(ss >> doublearray[0][col]) col++;
-      predictparams[0]=doublearray[0][0];
-      predictparams[1]=doublearray[0][1];      
-   }
-   row++;col=0;
 #ifndef __TEST_COLL_ONLY__
+      std::cout << "number of code params= " << maxrow << "\n";
       std::cout << "type ovp problem= " << type_ovp << " , order problem= " << order << "\n";      
       std::cout << "use prediction function= " << type_predict << " , repeat prediction all ranges= " << repeat_predict << "\n";       
       std::cout << "initial time= " << tinit << " , tend= " << tend << "\n";

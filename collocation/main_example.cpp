@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
 //  strFileName = "TheFile";  //prohibited, call $ ./main_example "TheFile" "TheCode"  instead
   std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1] and " << strCodeName << " as arg[2]\n";
 
-  IDENT05_COLL cnClassInst=IDENT05_COLL(1,6,strFileName,strCodeName);
+  IDENT05_COLL cnClassInst=IDENT05_COLL(6,strFileName,strCodeName);
   cnClassInst.read_parse_file();
   cnClassInst.read_parse_code();
 
