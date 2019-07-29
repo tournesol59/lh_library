@@ -80,7 +80,7 @@ bool IDENT05_COLL::read_parse_file()
       std::stringstream ss(line);
       col = 0;
       while(ss >> dataarray[row][col]) col++;
-#ifndef __TEST_COLL_ONLY__
+#ifdef __TEST_COLL_ONLY__
       std::cout << "tf= "  << dataarray[row][0] << " ";
       std::cout << "utf= " << dataarray[row][1] << " ";
       std::cout << "ytf= " << dataarray[row][2] << " ";
@@ -97,8 +97,9 @@ bool IDENT05_COLL::read_parse_file()
 
 bool IDENT05_COLL::read_parse_code() {
    int maxrow, row, col;
-   std::string tuple_t;
-//std::string tuple_t[1][2];
+   char tuple_t0[8]="REL";
+   char tuple_t1[8]="INIPAR";
+   const char* tuple_t;
    Number doublearray[1][2];
    Index intarray[1][2];
 /* *
@@ -116,17 +117,15 @@ bool IDENT05_COLL::read_parse_code() {
    std::getline(lh_code, line);
    std::stringstream ss(line);
    ss >> maxrow;
-   std::cout << "have " << maxrow << "Code Parameters\n";
+   std::cout << "have " << maxrow << " Code Parameters\n";
    row=1;
    std::div_t dv{}; dv.quot = row;
-   while ( (std::getline(lh_code, line)) && (row<2*maxrow+1) ) {
+   while ( (std::getline(lh_code, line)) && (row<(4*maxrow)) ) {
       std::stringstream ss(line);
       col=0;
       dv.quot=row;
       dv = std::div(dv.quot, 2);
-      std::vector<std::array<char, 8>> listchar;
-      std::string tuple_t0;
-      std::string tuple_t1;
+      std::vector<std::array<char, 8>> listchar;   //stackoverflow
 
       if (dv.rem) {     // odd rows: typ and name of params
 //        while (ss >> tuple_t[0][col]) col++;  // do not work for const char*
@@ -134,45 +133,69 @@ bool IDENT05_COLL::read_parse_code() {
 
           // note: the following loop terminates when std::ios_base::operator bool()
           // on the stream returned from getline() returns false
+
+         // for (std::array<char, 8> ar; ss.getline(&ar[0], 8, ':'); ) {//stackoverflow$
+         //       listchar.push_back(ar);  // name
+         // }
+
 	  int count=1;
-          for (std::array<char, 8> ar; ss.getline(&ar[0], 8, ':'); ) {//stackoverflow$
-              listchar.push_back(ar);
-              switch(count) {
-                   case 1:
-	     		   tuple_t0=ar[0];
-		   case 2:
-			   tuple_t1=ar[0];
-	      }
-	      count++;
-          }
-          for (auto& ar :listchar) {
-               std::cout << &ar[0] << '\n';
-          }
-      std::cout << "type= " << tuple_t0 << " and name= " << tuple_t1 << "\n";	  
+           for (count=1;count<3;count++) {
+	       const std::string tmp = ss.str();
+          //for (auto& ar :listchar) {
+           //    std::cout << &ar[0] << '\n';   // Test the format (type,name)
+               if (count==1) {
+		 strncpy( tuple_t0, (const char*) tmp.c_str(), 3);
+		 std::cout << "type= " << tuple_t0 << "\n";       
+	       }
+
+	       else {
+		 tuple_t=(const char*) tmp.c_str();
+		 strncpy( tuple_t1, tuple_t, 11);
+                 std::cout << "name= " << tuple_t1 << "\n"; 
+	       }
+       	  }
+	  
       }//end odd rows
       else { 
-
 	      // odd rows: params values
-       if (tuple_t0=="INT") {
+       if (!(strcmp(tuple_t0, "INT"))) {    // if not == strcmp  MATCH INT
          while (ss >> intarray[0][col]) col++;
-         if (tuple_t1=="IBVEQN") {
+         if (!strcmp(tuple_t1, "INT:IBVEQN:")) {
            type_ovp = intarray[0][0];
 	   type_eqn = intarray[0][1];
 	 }	 
+         if (!strcmp(tuple_t1, "INT:PRELOG:")) {
+           type_predict = intarray[0][0];
+	   repeat_predict = intarray[0][1];
+	 }	
+         if (!strcmp(tuple_t1, "INT:NUMPTS:")) {
+           num_ranges = intarray[0][0];
+	   num_points = intarray[0][1];
+	 }
+         std::cout << "valuei1= " << intarray[0][0] << " and valuei2= " << intarray[0][1] << "\n";	 
        }
-       else if (tuple_t0=="DOU") {
+       else if (!(strcmp(tuple_t0, "DOU"))) {     // if not == strcmp MATCH DOU
          while (ss >> doublearray[0][col]) col++;
-         if (tuple_t1=="INIEND") {
+         if (!strcmp(tuple_t1, "DOU:INIEND:")) {
 	    tinit = doublearray[0][0];
             tend  = doublearray[0][1];
 	 }
-       }
-      
-      }//end even rows, (if dv.rem)
-      row=row+2;
-   }//end while
+         if (!strcmp(tuple_t1, "DOU:BVALUE:")) {
+	    boundry[0] = doublearray[0][0];
+            boundry[1]  = doublearray[0][1];
+	 }
+         if (!strcmp(tuple_t1, "DOU:PREVAL:")) {
+	    predictparams[0] = doublearray[0][0];
+            predictparams[1] = doublearray[0][1];
+	 }
+         std::cout << "valued1= " << doublearray[0][0] << " and valued2= " << doublearray[0][1] << "\n"; 	 
+       }//end if INT:DOU
 
-#ifndef __TEST_COLL_ONLY__
+      }//end even rows, (if dv.rem)
+      row=row+1;
+   }//end while rows
+
+#ifdef __TEST_COLL_ONLY__
       std::cout << "number of code params= " << maxrow << "\n";
       std::cout << "type ovp problem= " << type_ovp << " , order problem= " << order << "\n";      
       std::cout << "use prediction function= " << type_predict << " , repeat prediction all ranges= " << repeat_predict << "\n";       
@@ -413,7 +436,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
    B_l1[order+2]=boundry[1];
 //end matrices for Clapack
 
-#ifndef __TEST_COLL_ONY__
+#ifdef __TEST_COLL_ONY__
 
 // display matrices for debug:
   std::cout <<"Content of matrix Rk for debug: \n"; 
@@ -497,6 +520,40 @@ bool IDENT05_COLL::SolveSeriesLinearSys_ref1()
 return 0;
 }
 
+bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end, Index k) {
+	Number t;
+
+	/* REPEAT BOUNDARY FOR NEXT RANGE: */
+   if (type_predict==0) {
+      if (k==0) {
+         boundary_all[0]=boundry[0];
+         boundary_all[1]=boundry[1];
+      } 
+      else {
+// in this case (Initial Value Problem) boundry[0] is the state and boundry[1] is the derivative
+         t=times_end[k];
+         boundary_all[2*(k+1)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]); // does not work if the period is not captured
+         boundary_all[2*(k+1)+1]=predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]); // defaut but does not work if the period is not captured
+     }
+   } 
+   else {
+       if (repeat_predict==0) {  // use the predictor function as many times as ranges
+         t=times_end[k];
+
+	 boundary_all[2*(k+1)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+	 t=times_end[k+1];
+	 boundary_all[2*(k+1)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+
+      } 
+      else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
+         boundary_all[2*(k+1)] = 0.0;
+         boundary_all[2*(k+1)+1] = predictparams[0]*2*3.14156;
+      }
+    } // endif type_predict
+  return 0;
+}
+
+
 bool IDENT05_COLL::SolveNumRangesSys_ref1()
 {
    Index k, j;
@@ -504,16 +561,12 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
    Number boundary_all[10]; 
 // 10 should be set to a variable index in the future as it corresponds to a number of points in a simulation intervall (10) and is time-sampling dependant
    Number equ_all[12];
-
+   
 //   times_end = (double*) malloc(5*sizeof(Number));  
- if (type_predict==0) {
-   boundary_all[0]=boundry[0];
-   boundary_all[1]=boundry[1];
-  }
- else {
-   boundary_all[0]=0.0;
-   boundary_all[1]=predictparams[0]*sin(6.2831/predictparams[1]);
- }
+   k=0;
+   if (NumRangesCalcBoundary(boundary_all, times_end, k)) {
+      std::cout << "Error Calc Init Boundary\n"; 
+   }
 //   equ_all[0]=equ1[0];
 //   equ_all[1]=equ1[1];
 //   equ_all[2]=equ1[2];
@@ -556,14 +609,11 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
            std::cout << coeffarray[(order+1)*k+j] << '\n';
        }
 #endif           
-   if (type_predict==0) {
+      
+      if (NumRangesCalcBoundary(boundary_all, times_end, k)) {
+          std::cout << "Error iteration of Calc Init Boundary Condition\n";
+      }
 
-	//copy the result to form the new boundary
-       boundary_all[2*(k+1)]=0.0; //evalCollocation(1.0, B_l1);
-//       boundary_all[2*(k+1)+1]=( evalCollocation(1.0, B_l1) - evalCollocation(0.99, B_l1) )/0.01;
-       boundary_all[2*(k+1)+1]=1.0;// at constant problem and time intervall given
-   }  //else..
-   
 	//evaluate the result of the solution in solarray vector
        for (j=0; j<=num_points; j++) {
            x=-1+2.0/float(num_points)*j;
@@ -572,9 +622,22 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 	   solarray[num_points*k+j][1]=evalCollocation(x, B_l1); // x, not t
        }
    } //end for k
-   //should try to display the solution
-
+   
+   // SAVE ON DISK the solution: coefficients and time values
+   //
   int row;
+  std::ofstream lh_spec;
+  lh_spec.open("TheSpec", std::ofstream::out);  // test w/o variable Name
+  row=0;
+  lh_spec << num_ranges << "\n";
+  while (k<num_ranges) {
+        for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
+          // display the result
+           lh_spec << coeffarray[(order+1)*k+j] << "\n";
+         }
+   }
+  lh_spec.close();
+
   std::ofstream lh_test;
   lh_test.open("TheTest", std::ofstream::out);  // test w/o variable Name
   row=0;
@@ -605,9 +668,9 @@ Number IDENT05_COLL::evalCollocation(Number t, Number * coeff)
   Number sum;
   sum=0.0;
   for (j=0;j<=order;j++) {
-#ifndef __TEST_COLL_ONLY__ 
-	std::cout << "coeff[" << j << "]= " << coeff[j] << "\n";
-#endif	  
+//#ifdef __TEST_COLL_ONLY__ 
+//	std::cout << "coeff[" << j << "]= " << coeff[j] << "\n";
+//#endif	  
      sum=sum+coeff[j]*evalChebyshevPolynom(t,j);
   }
   return sum;

@@ -68,6 +68,7 @@ class IDENT05_COLL {
       // repeat the operation ma times and adjusting for each interval:
 	// - coeff of equ1[] because of changing t variable
 	// - boudary conditions boundry[](tk+1)=solution(boundry[](tk), t=tk+1)
+      bool NumRangesCalcBoundary(Number* boundary_all, Number* times_end, int k);
       bool SolveNumRangesSys_ref1();
 	// only for test purposes: evaluate the  solution and display the solution
       Number evalCollocation(Number t, Number * coeff);
@@ -96,7 +97,10 @@ class IDENT05_COLL {
 
       // Ordinary Differential equation parameters
       IDENT05_OPTIONS code_opts;
+
       Index type_eqn;  // 1. Linear2 single coeff 2. Linear2 with polynom up to deg 2; 
+      Index type_predict;  //as boolean, use the B*sin(wt) func to generate boundry[1] value
+      Index repeat_predict; //(1) or use the same value[1] for all ranges      
       Index type_ovp; // 1 if boundary value problem 0, if initial
       Number boundry[2]; // x0 and dx0
       Number tinit;
@@ -104,8 +108,6 @@ class IDENT05_COLL {
       Index num_ranges;  //also called ma, should be equal to 4
       Index num_points;  // points per range   
       Index num_total_coeffs; //shall be initialized to N*ma
-      Index type_predict;  //as boolean, use the B*sin(wt) func to generate boundry[1] value
-      Index repeat_predict; //(1) or use the same value[1] for all ranges
       Number predictparams[2];
 
       Number A_l1[81];  // matrix (order+3)*(order+3)
