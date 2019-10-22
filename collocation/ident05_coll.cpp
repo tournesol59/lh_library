@@ -106,8 +106,8 @@ bool IDENT05_COLL::read_parse_code() {
  * Open "TheCode" which is a parameter file with 6 rows of doublets:
  * 1: int:bvp if (1)or ivp, type of diff eqn
  * 2: prediction(1) or given boundry[1] if (0), repeat boundry or use once
- * 3: double:boundry[0], boundry[1] as bvp or ivp
  * 4: double:tinit,tend
+ * 3: double:boundry[0], boundry[1] as bvp or ivp
  * 5: int: num_ranges for calc, num_points for output
  * 6: double:prediction[0] and prediction[1] (amplitude and period of sinusoide)
  * */
@@ -522,34 +522,53 @@ return 0;
 
 bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end, Index k) {
 	Number t;
+        
+	/* REPEAT BOUNDARY FOR NEXT RANGE: this function should be called at init k=0 and after SolveSeriesLinearSys based on boundary_all[2*k,2*k+1] */
+	 /* Hence this function should be called with arg3=k+1 */
 
-	/* REPEAT BOUNDARY FOR NEXT RANGE: */
-   if (type_predict==0) {
+   if (type_ovp == 0) {  // Initial Value Problem
+   // in the case of Initial Value Problem, boundry[0] is the state and boundry[1] is the derivative
       if (k==0) {
          boundary_all[0]=boundry[0];
          boundary_all[1]=boundry[1];
       } 
-      else {
-// in this case (Initial Value Problem) boundry[0] is the state and boundry[1] is the derivative
+      else { // temptative of jointure of piecewise polynoms but will this not diverge? 
+	 boundary_all[2*(k)]=solarray[num_points*(k-1)+num_points-1][1];
+	 boundary_all[2*(k)+1]=( solarray[num_points*(k-1)+num_points-1][1] 
+                         - solarray[num_points*(k-1)+num_points-2][1] ) 
+                        / ( solarray[num_points*(k-1)+num_points-1][0] 
+                         - solarray[num_points*(k-1)+num_points-2][0] );
+      }
+       // for an initial value problem the second boundary condition is an initial condition and shall be scaled to the interval [-1,1]
+      boundary_all[2*(k)+1] = boundary_all[2*(k)+1] / (2/(times_end[k+1]-times_end[k]));
+   }
+   else {  // Boundary Value Problem
+     if (type_predict==0) {
+       if (k==0) {
+         boundary_all[0]=boundry[0];
+         boundary_all[1]=boundry[1];
+       } 
+       else {
          t=times_end[k];
-         boundary_all[2*(k+1)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]); // does not work if the period is not captured
-         boundary_all[2*(k+1)+1]=predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]); // defaut but does not work if the period is not captured
-     }
-   } 
-   else {
+         boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]); // does not work if the period is not captured
+         boundary_all[2*(k)+1]=predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]); // defaut but does not work if the period is not captured
+       }
+     } 
+     else {
        if (repeat_predict==0) {  // use the predictor function as many times as ranges
          t=times_end[k];
+	 boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
 
-	 boundary_all[2*(k+1)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
 	 t=times_end[k+1];
-	 boundary_all[2*(k+1)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+	 boundary_all[2*(k)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
 
-      } 
-      else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
-         boundary_all[2*(k+1)] = 0.0;
-         boundary_all[2*(k+1)+1] = predictparams[0]*2*3.14156;
+       } 
+       else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
+         boundary_all[2*(k)] = 0.0;
+         boundary_all[2*(k)+1] = predictparams[0]*2*3.14156; // /predictparams[1]
       }
     } // endif type_predict
+  }//endif type_ovp
   return 0;
 }
 
@@ -561,20 +580,20 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
    Number boundary_all[10]; 
 // 10 should be set to a variable index in the future as it corresponds to a number of points in a simulation intervall (10) and is time-sampling dependant
    Number equ_all[12];
-   
-//   times_end = (double*) malloc(5*sizeof(Number));  
+
+//   equ_all[0]=equ1[0];
+//   equ_all[1]=equ1[1];
+//   equ_all[2]=equ1[2];
+   for (k=0; k<num_ranges; k++) {
+       // iterate on intervals
+       times_end[k]=tinit + k*(tend-tinit)/num_ranges;
+   }   
+   times_end[num_ranges]=tend;
    k=0;
    if (NumRangesCalcBoundary(boundary_all, times_end, k)) {
       std::cout << "Error Calc Init Boundary\n"; 
    }
-//   equ_all[0]=equ1[0];
-//   equ_all[1]=equ1[1];
-//   equ_all[2]=equ1[2];
-
    for (k=0; k<num_ranges; k++) {
-       // iterate on intervals
-       times_end[k]=tinit + k*(tend-tinit)/num_ranges;
-       times_end[k+1]=tinit+(k+1)*(tend-tinit)/num_ranges;
 	// import equation coefficients, which are set in the Data TheFile.txt
        equ_all[3*k+2]=dataarray[k*num_points+0][3];
        equ_all[3*k+1]=dataarray[k*num_points+1][4];
@@ -583,7 +602,9 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
        equ_all[3*k]=equ_all[3*k]*(1); 
        equ_all[3*k+1]=equ_all[3*k+1]*(2/(times_end[k+1]-times_end[k]));
        equ_all[3*k+2]=equ_all[3*k+2]*pow(  (2/(times_end[k+1]-times_end[k])), 2);
-
+#ifdef __TEST_COLL_ONLY__       
+	std::cout << "    check boundary conditions: y0 " <<  boundary_all[2*k] << " and dy0 " <<  boundary_all[2*k+1] << " \n";
+#endif
        boundry[0]=boundary_all[2*k];
        boundry[1]=boundary_all[2*k+1];
 
@@ -609,10 +630,6 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
            std::cout << coeffarray[(order+1)*k+j] << '\n';
        }
 #endif           
-      
-      if (NumRangesCalcBoundary(boundary_all, times_end, k)) {
-          std::cout << "Error iteration of Calc Init Boundary Condition\n";
-      }
 
 	//evaluate the result of the solution in solarray vector
        for (j=0; j<=num_points; j++) {
@@ -621,6 +638,12 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 	   solarray[num_points*k+j][0]=t;
 	   solarray[num_points*k+j][1]=evalCollocation(x, B_l1); // x, not t
        }
+
+      // anticipate next iteration and calc correspondant boundaries            
+      if (NumRangesCalcBoundary(boundary_all, times_end, k+1)) {
+          std::cout << "Error iteration of Calc Init Boundary Condition\n";
+      }
+
    } //end for k
    
    // SAVE ON DISK the solution: coefficients and time values
