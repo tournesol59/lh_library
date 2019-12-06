@@ -1,7 +1,10 @@
 //#include "MathFunctions.h"
 #include <stdio.h>
 #include <malloc.h>
-#include "/home/frederic/lapack-3.7.0/LAPACKE/include/lapacke.h"
+// does not work in MinGW:
+//#include "/home/Utilisateur/lapack-3.8.0/LAPACKE/include/lapacke.h"
+// use instead:
+#include "../../lapack-3.8.0/LAPACKE/include/lapacke.h"
 
 
 //#define SIZE 9
@@ -19,7 +22,7 @@ int mySolveLinearLapack(int n, int rhs, double * A, int lda, int * ipiv, double 
   lapack_int LDB=ldb;
   lapack_int INFO;
  
-  IPIV=malloc(n*sizeof(lapack_int));
+  IPIV=(lapack_int*) malloc(n*sizeof(lapack_int));
 
   for (i=0;i<n;i++) {
     IPIV[i]=ipiv[i];

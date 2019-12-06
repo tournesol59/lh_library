@@ -11,6 +11,11 @@ namespace lhlib
   /** Type of default integer */
   typedef int Int;
 
+  typedef struct dpair {
+     Number x; 
+     Number y;
+  }* p_dpair;
+
 } // namespace lhlib
 
 #endif

@@ -8,7 +8,7 @@
  *
  * LIEBHERR TOULOUSE
  *******************************************************/
-#include "ident05_coll.hpp"
+#include "../include/ident05_coll.hpp"
 
 #ifndef __TEST_COLL_ONLY__
 #define __TEST_COLL_ONLY__
@@ -54,6 +54,7 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
   tend=2.0;
   num_ranges=2;
   num_points=20;
+  num_rows=num_ranges*num_points;
   num_total_coeffs=(order+1)*num_ranges;
   predictparams[0]=1.0;
   predictparams[1]=2.0;
@@ -90,16 +91,18 @@ bool IDENT05_COLL::read_parse_file()
 #endif
       row++;
   }
+   num_rows=row;
    lh_file.close();
 
    return 0;
 }
 
+
 bool IDENT05_COLL::read_parse_code() {
    int maxrow, row, col;
    char tuple_t0[8]="REL";
-   char tuple_t1[8]="INIPAR";
-   const char* tuple_t;
+   char tuple_t1[12]="INT:INIPAR";
+//   const char* tuple_t;
    Number doublearray[1][2];
    Index intarray[1][2];
 /* *
@@ -149,8 +152,8 @@ bool IDENT05_COLL::read_parse_code() {
 	       }
 
 	       else {
-		 tuple_t=(const char*) tmp.c_str();
-		 strncpy( tuple_t1, tuple_t, 11);
+	//	 tuple_t=(const char*) tmp.c_str();
+		 strncpy( tuple_t1, (const char*) tmp.c_str(), 11);
                  std::cout << "name= " << tuple_t1 << "\n"; 
 	       }
        	  }
@@ -181,8 +184,14 @@ bool IDENT05_COLL::read_parse_code() {
             tend  = doublearray[0][1];
 	 }
          if (!strcmp(tuple_t1, "DOU:BVALUE:")) {
-	    boundry[0] = doublearray[0][0];
+		 //both initial and boundry are filled with the same values
+		 // but only one of them shall be used whether type_ovp=1 (boundry)
+		 // or 0 (initial)
+            initial[0] = doublearray[0][0];
+	    initial[1] = doublearray[0][1];
+            boundry[0] = doublearray[0][0];
             boundry[1]  = doublearray[0][1];
+
 	 }
          if (!strcmp(tuple_t1, "DOU:PREVAL:")) {
 	    predictparams[0] = doublearray[0][0];
@@ -413,8 +422,14 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
   A_l1[4*(order+3)+(order+2)]=-16.0;//-16.0//0.0
   A_l1[5*(order+3)+(order+2)]=25.0;//20.0//10.0
   A_l1[6*(order+3)+(order+2)]=-36.0;//-36.0//0.0
+  for (j=0; j<=order; j++) {
+       B_l1[j]=0.0;
+   }
+   B_l1[order+1]=initial[0];
+   B_l1[order+2]=initial[1];  
   }
-  else {
+  else 
+  {
   A_l1[0*(order+3)+(order+2)]=1.0;
   A_l1[1*(order+3)+(order+2)]=1.0;
   A_l1[2*(order+3)+(order+2)]=1.0;
@@ -422,6 +437,11 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
   A_l1[4*(order+3)+(order+2)]=1.0;
   A_l1[5*(order+3)+(order+2)]=1.0;
   A_l1[6*(order+3)+(order+2)]=1.0;	  
+  for (j=0; j<=order; j++) {
+       B_l1[j]=0.0;
+   }
+   B_l1[order+1]=boundry[0];
+   B_l1[order+2]=boundry[1];
   } 
 //check the four last col-row are equal to zero:
   A_l1[7*(order+3)+(order+1)]=0.0; 
@@ -429,11 +449,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
   A_l1[8*(order+3)+(order+1)]=0.0; 
   A_l1[8*(order+3)+(order+2)]=0.0; 
 
-   for (j=0; j<=order; j++) {
-       B_l1[j]=0.0;
-   }
-   B_l1[order+1]=boundry[0];
-   B_l1[order+2]=boundry[1];
+
 //end matrices for Clapack
 
 #ifdef __TEST_COLL_ONY__
@@ -521,16 +537,16 @@ return 0;
 }
 
 bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end, Index k) {
-	Number t;
+  Number t;
         
 	/* REPEAT BOUNDARY FOR NEXT RANGE: this function should be called at init k=0 and after SolveSeriesLinearSys based on boundary_all[2*k,2*k+1] */
 	 /* Hence this function should be called with arg3=k+1 */
 
-   if (type_ovp == 0) {  // Initial Value Problem
+   if (type_ovp == COL_TYP_INITIAL) {  // Initial Value Problem
    // in the case of Initial Value Problem, boundry[0] is the state and boundry[1] is the derivative
       if (k==0) {
-         boundary_all[0]=boundry[0];
-         boundary_all[1]=boundry[1];
+         boundary_all[0]=initial[0];
+         boundary_all[1]=initial[1];
       } 
       else { // temptative of jointure of piecewise polynoms but will this not diverge? 
 	 boundary_all[2*(k)]=solarray[num_points*(k-1)+num_points-1][1];
@@ -541,9 +557,9 @@ bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end
       }
        // for an initial value problem the second boundary condition is an initial condition and shall be scaled to the interval [-1,1]
       boundary_all[2*(k)+1] = boundary_all[2*(k)+1] / (2/(times_end[k+1]-times_end[k]));
-   }
+   } // if type ovp:
    else {  // Boundary Value Problem
-     if (type_predict==0) {
+     if (type_predict==COL_TYP_BVP_PRED_TRICKED) {
        if (k==0) {
          boundary_all[0]=boundry[0];
          boundary_all[1]=boundry[1];
@@ -553,21 +569,21 @@ bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end
          boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]); // does not work if the period is not captured
          boundary_all[2*(k)+1]=predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]); // defaut but does not work if the period is not captured
        }
-     } 
-     else {
-       if (repeat_predict==0) {  // use the predictor function as many times as ranges
-         t=times_end[k];
-	 boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+     }
+     else { //type_predict=1 (COL_TYP_BVP_PRED_NORM , use a function)
+        if (repeat_predict==COL_TYP_BVP_NREPEAT) {  // use the predictor function as many times as ranges
+          t=times_end[k];
+	  boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
 
-	 t=times_end[k+1];
-	 boundary_all[2*(k)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+	  t=times_end[k+1];
+	  boundary_all[2*(k)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
 
-       } 
-       else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
+         } 
+         else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
          boundary_all[2*(k)] = 0.0;
          boundary_all[2*(k)+1] = predictparams[0]*2*3.14156; // /predictparams[1]
-      }
-    } // endif type_predict
+         }
+     } // endif type_predict
   }//endif type_ovp
   return 0;
 }
@@ -647,7 +663,7 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
    } //end for k
    
    // SAVE ON DISK the solution: coefficients and time values
-   //
+   // SHALL BE REPLACED BY ANOTHER DEDICATED CLASS METHOD
   int row;
   std::ofstream lh_spec;
   lh_spec.open("TheSpec", std::ofstream::out);  // test w/o variable Name
@@ -731,3 +747,19 @@ Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
   }
   return sum;
 }
+
+bool IDENT05_COLL::pass_dataarray_col(Index dim, li_doubles &exports) {
+
+   Index row;
+   Number data[2];
+
+   for (row=0; row< dim; row++) {
+ // REVERSE OF exportClassInst.arrayToExport[row][sig]=ptr_sig[row];
+     data[0]=solarray[row][0];
+     data[1]=solarray[row][1];
+     exports.push_back(data[0]);
+     exports.push_back(data[1]);     
+   }
+  return 1;
+}
+

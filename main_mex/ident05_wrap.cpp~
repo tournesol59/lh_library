@@ -60,15 +60,20 @@ void wrapper_mexfunc_lsq(Number *ptr_u, Number *ptr_t, INARG_S *inarg) {
   strncpy(expFileName, ".randin", 8);
   IDENT05_IODATA expClassInst=IDENT05_IODATA(inarg->dim, expFileName);
 
-  // copy data into list but not found an optimal iterator
+  // copy data into list not found an optimal iterator
   for (i=0; i< inarg->dim; i++) {
      singleton.x = dtime.at(i);
      singleton.y = data.at(i); 
      datalist.push_back( singleton );
   }
   i=1;
+  for (auto it=data.begin(); it != data.end(); it++) {
+     singleton.x = (datalist.at(i)).x;
+     singleton.y = *it; 
+     datalist.push_back( singleton );
+     i++;
+  }
   // so not optimal..
-  //
   expClassInst.exportToDisk(datalist);
 
   // create a instance of class which manages to approx "data"
