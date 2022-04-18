@@ -15,6 +15,13 @@ diff_nodes[5,:]=[-0.90618,-0.53857,0.,0.53857, 0.90618, 0.,0.]
 diff_nodes[6,:]=[-0.92,-0.65,-0.24,0.24,0.65,0.92, 0.]
 diff_nodes[7,:]=[-0.945,-0.74,-0.39,0.,0.39,0.74,0.945]
 
+manual_Btable2=num.zeros((4,4)) #for diff_nodes[2,:]
+manual_Btable2[0,:]=[0.11706,0.6856,-1.04645,-0.21328]
+manual_Btable2[0,:]=[-0.075392,-1.0464,0.6856,0.17162]
+manual_Btable2[0,:]=[-0.0625,0.17524,-0.82476,0.0625]
+manual_Btable2[0,:]=[-0.0625,0.17524,-0.82476,0.0625]
+
+
 class MatLagrKernel(object):
     def __init__(self,xext,nx):
             self.__xext=num.zeros((nx))
@@ -29,6 +36,14 @@ class MatLagrKernel(object):
             self.__KM[i,i]=1e-6 #but care should be taken not to use it
             for j in range(i+1,self.__nx):
                 self.__KM[i,j]=self.__xext[i]-self.__xext[j]
+
+    def fillKernelAdapted(self):
+        k=int ((self.__nx)/2+1)
+        # with rescaled evaluation points diff_nodes
+        for l in range(0,self.__nx):
+            scal=(self.__xext[l]+1.0)
+            for j in range(0,self.__nx):
+                self.__KM[l,j]=(-1.+(diff_nodes[k,l]+1.)*scal)-self.__xext[j]
 
     def get_KM(self):
         return self.__KM  # test this!
@@ -56,8 +71,8 @@ class MatDiffPoints(object):
             self.__xext[i]=x[i-1]
         self.__xext[param[0]+1]=1.0 # default right value
         self.__nx=param[0]+2
-        self.__DM = num.zeros((self.__nx, self.__nx)) # nx Lagr Points leads to nx polynoms and nx eval pts
-         
+        self.__DM = num.zeros((2,self.__nx, self.__nx)) # nx Lagr Points leads to nx polynoms and nx eval pts
+
     def setallDiffMat(self):    
     # here implement the lagrange difference and products
     # to have DM(i,j)=deriv(Lagr{j}, dt)(ti)
@@ -68,7 +83,7 @@ class MatDiffPoints(object):
         instKernel.fillKernel()        
         Kernel = instKernel.get_KM() # unclear of whether it is a copy
 
-   #second run a double loop for DM(i,j)
+   #second run a double loop for DM(0,i,j)
         for i in range(0,nxe):
          # set a common factor for D(1)(i,j):
             alphac_i = 1.0
@@ -83,7 +98,7 @@ class MatDiffPoints(object):
                         if (l != j) and (l != i): 
          # this test is necessary to have not simplification by (ti-tj)
                             alpha_j = alpha_j*Kernel[j,l]
-                    self.__DM[i,j] = alpha_j / alphac_i
+                    self.__DM[0,i,j] = alpha_j / alphac_i
                 else:
                     #if (j==i):
          # next we have to complete DM^(1)(i,i)=sum 1/(ti-tl)
@@ -92,7 +107,21 @@ class MatDiffPoints(object):
                         if (l != i):
          # this test is necessary to not divide by zero but Kernel(i,l) could be safe
                             term_ii = term_ii + 1.0/Kernel[i,l]
-                    self.__DM[i,i] = term_ii
+                    self.__DM[0,i,i] = term_ii
+
+# now we have to compute alpha_jp to complete DM"(2)(i,j)=sum,j al_jp/alc_i
+  
+            for j in range(0,nxe):
+               if (j != i):
+                  term2_ij = 0.0
+                  for p in range(0,nxe):
+                      alpha_jp = 1.0
+                      for l in range(0,nxe):
+                          if (l != j) and (l != i) and (l !=p):
+    # this test is necessary to have proper derivation and also not simplification
+                             alpha_jp = alpha_jp*Kernel[p,l]
+                      term2_ij = term2_ij + alpha_jp
+                      self.__DM[1,i,j] = term2_ij/alphac_i
  #end method setallDM() of class MatDiffPoints.
 
     def __str__(self):
@@ -100,10 +129,65 @@ class MatDiffPoints(object):
         for i in range(0,nxe):
             print(str(i)+"    ")
             for j in range(0,nxe):
-                print(self.__DM[i,j]);
+                print(self.__DM[0,i,j]);
             print("\n")
 
 # end class MatDiffPoints
 
 
+class MatPseudoPoints(object):
+    def __init__(self,param,x):
+    # x: numpy array of points (the mesh)
+    # param(0): (list) no. of collocation points per subinterval w/o extrems
+    # param(1): left value
+    # param(2): right value
+    # param(3): no. of subintervals in the initial mesh
+    # param(...) think about other params..
+        self.__xext=num.zeros((param[0]+2))
+        self.__xext[0]=-1.0 # default left value
+        for i in range(1,param[0]+1):
+            self.__xext[i]=x[i-1]
+        self.__xext[param[0]+1]=1.0 # default right value
+        self.__nx=param[0]+2
+        self.__Btable = num.zeros((self.__nx, self.__nx)) # nx Lagr Points
 
+    def setButcherMat(self):    
+        nxe=self.__nx
+        # create a class of Lagrange points difference of size nxe=total no.pt
+        instKernel = MatLagrKernel(self.__xext,nxe)
+        instKernel.fillKernel()
+        Kernel = instKernel.get_KM()
+        instKernel.fillKernelAdapted()        
+        KernelAd = instKernel.get_KM() # unclear of whether it is a copy
+  #second run a double loop for integrating over [0,xi]
+        for i in range(0,nxe-1):
+        # set a common factor for D(1)(i,j):
+            factor_il = 1.0
+            for k in range(0,nxe):
+                for l in range(0,nxe):
+                   if (l != k): 
+                      factor_il = factor_il*KernelAd[i,l]/Kernel[k,l]
+                self.__Btable[i,k]=factor_il
+        for k in range(0,nxe): #copy
+            self.__Btable[nxe-1,k]=self.__Btable[nxe-2,k]
+
+
+    def checkBtable2():
+        nxe=self.__nxe
+        # compare with pre calculated values if nxe=4
+        if (nxe==4):
+            for i in range(0,nxe-1):
+                for k in range(0,nxe):
+                    if (fabs(self.__Btable[i,k]-manual_Btable2[i,k])>1e-3):
+                        print(str(i)+" "+str(k)+" "+str(self.__Btable[i,k]))
+                        break
+
+    def __str__(self):
+        nxe=self.__nx
+        for i in range(0,nxe):
+            print(str(i)+"    ")
+            for j in range(0,nxe):
+                print(self.__Btable[i,j]);
+            print("\n")
+
+# end class MatPseudoPoints
