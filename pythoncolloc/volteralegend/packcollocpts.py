@@ -26,9 +26,12 @@ class MatLagrKernel(object):
     def __init__(self,xext,nx):
             self.__xext=num.zeros((nx))
             self.__KM=num.zeros((nx,nx))
+            self.__LX=num.zeros((nx))	
+            self.__factors=num.zeros((nx))				
             self.__nx=nx
             for i in range(0,self.__nx):
                 self.__xext[i]=xext[i]
+
     def fillKernel(self):
         for i in range(0,self.__nx):
             for j in range(0,i):
@@ -38,16 +41,37 @@ class MatLagrKernel(object):
                 self.__KM[i,j]=self.__xext[i]-self.__xext[j]
 
     def fillKernelAdapted(self):
+    # will be used by MatPseudoPoints to integrate over [-1,r], r <1
+    # and only by that class !
         k=int ((self.__nx)/2+1)
         # with rescaled evaluation points diff_nodes
         for l in range(0,self.__nx):
             scal=(self.__xext[l]+1.0)
             for j in range(0,self.__nx):
+            # correction: original line: self.__KM[l,j]=(-1.+(diff_nodes[k,l]+1.)*scal)-self.__xext[j]
                 self.__KM[l,j]=(-1.+(diff_nodes[k,l]+1.)*scal)-self.__xext[j]
+
+    def calcKernelFac(self): 
+	# must be called AFTER a Kernel has been filled
+        for l in range(0, self.__nx):
+            self.__factors[l]=1.0
+            for i in range(0, l-1):
+                self.__factors[l]=self.__factors[l]*self.__KM[l,i]
+            for i in range(l+1, self.__nx):
+                self.__factors[l]=self.__factors[l]*self.__KM[l,i]
+
+    def fillVarVector(self, xv):
+	# return a table (xv-xext(i))
+        for i in range(0,self.__nx): 
+             self.__LX[i]=(xv-self.__xext[i])    
+        return self.__LX  # test this!
 
     def get_KM(self):
         return self.__KM  # test this!
-
+		
+    def get_factors(self):
+        return self.__factors  # test this!
+		
     def __str__(self):
         for i in range(0,self.__nx):
             print(str(i)+"\n")
@@ -58,20 +82,36 @@ class MatLagrKernel(object):
 #end class MatLagrKernel
 
 class MatDiffPoints(object):
-    def __init__(self,param,x):
+
+    def __init__(self,param,x):	
     # x: numpy array of points (the mesh)
     # param(0): (list) no. of collocation points per subinterval w/o extrems
     # param(1): left value
     # param(2): right value
-    # param(3): no. of subintervals in the initial mesh
-    # param(...) think about other params..
+    # param(3): choice of nodes: 'norm'=in [-1,1] 'scal'=[p1,p2]
+    # param(4) no. of subintervals in the initial mesh.
         self.__xext=num.zeros((param[0]+2))
-        self.__xext[0]=-1.0 # default left value
-        for i in range(1,param[0]+1):
-            self.__xext[i]=x[i-1]
-        self.__xext[param[0]+1]=1.0 # default right value
-        self.__nx=param[0]+2
+        self.__xext[0]=param[1] # -1.0 default left value
+        self.__xext[param[0]+1]=param[2] # 1.0 default right value
+        nx=param[0]+2
+        self.__nx=nx
+        if (param[3]=='norm'):
+            for i in range(1,nx-1):	
+                self.__xext[i]=diff_nodes[nx,i]
+        elif (param[3]=='scal'):
+            for i in range(1,nx-1):
+            # formula to test: scale of nodes in interval of span 2.0 to another interval
+               self.__xext[i]=self.__xext[0]+(diff_nodes[nx,j]+1.0)/2.0*(self.__xext[nx-1]-self.__xext[0])
+
         self.__DM = num.zeros((2,self.__nx, self.__nx)) # nx Lagr Points leads to nx polynoms and nx eval pts
+        self.__instKernel = MatLagrKernel(self.__xext,nx)
+
+    def calcKernelFac(self):
+        self.__instKernel.calcKernelFac()
+
+    def get_factors(self):
+        self.__instKernel.calcKernelFac()
+        return self.__instKernel.get_factors()
 
     def setallDiffMat(self):    
     # here implement the lagrange difference and products
@@ -79,9 +119,9 @@ class MatDiffPoints(object):
     #first initialize a Kernel of ALL possible differences combination of the x
         nxe=self.__nx
         # create a class of Lagrange points difference of size nxe=total no.pt
-        instKernel = MatLagrKernel(self.__xext,nxe)
-        instKernel.fillKernel()        
-        Kernel = instKernel.get_KM() # unclear of whether it is a copy
+        #instKernel = MatLagrKernel(self.__xext,nxe)
+        self.__instKernel.fillKernel()        
+        Kernel = self.__instKernel.get_KM() # unclear of whether it is a copy
 
    #second run a double loop for DM(0,i,j)
         for i in range(0,nxe):
@@ -132,6 +172,14 @@ class MatDiffPoints(object):
                 print(self.__DM[0,i,j]);
             print("\n")
 
+    def get_xext(self):
+        return self.__xext
+
+    def getDM1(self):
+        return self.__DM[0,:,:]
+
+    def get_LX(self,xv):
+        return self.__instKernel.fillVarVector(xv)  # test this!		
 # end class MatDiffPoints
 
 
