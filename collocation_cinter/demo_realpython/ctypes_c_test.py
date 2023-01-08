@@ -5,8 +5,17 @@ import sys
 import pathlib
 
 if __name__ == "__main__":
-    libname = pathlib.Path("C:\MinGW\msys\1.0\home\Alain\lh_library\collocation_cinter\demo_realpython\").absolute()
-    print("libname: ", libname)
+    libname = pathlib.Path("C:\MinGW\msys\1.0\home\Alain\lh_library\collocation_cinter\demo_realpython\").absolute()		
+print("libname: ", libname)
+
+#***stackoverflow
+#BASE_DIR = Path('.')
+#EXTENSIONS = {'.xls', '.txt'}
+
+#for path in BASE_DIR.glob(r'**/*'):
+#    if path.suffix in EXTENSIONS:
+#        print(path)
+#***
 
     # Load the shared library into c types.
 #    if sys.platform.startswith("win"):
