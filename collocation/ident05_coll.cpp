@@ -522,7 +522,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 
 bool IDENT05_COLL::SolveSeriesLinearSys_ref1() 
 {
-   int n, rhs, lda, ldb, info;
+   int status, n, rhs, lda, ldb, info;
    int ipiv[9];
  
    n=order+3;
@@ -532,7 +532,7 @@ bool IDENT05_COLL::SolveSeriesLinearSys_ref1()
    info=1;
  
    // call to ../MathFunctions/mySolveLinearLapack.c
-   mySolveLinearLapack(n,rhs,A_l1,lda,ipiv,B_l1,ldb,info);
+   status=mySolveLinearLapack(n,rhs,A_l1,lda,ipiv,B_l1,ldb,info);
 return 0;
 }
 
@@ -751,14 +751,14 @@ Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
 bool IDENT05_COLL::pass_dataarray_col(Index dim, li_doubles &exports) {
 
    Index row;
-   Number data[2];
-
+  // Number data[2];
+   dpair data;
+   
    for (row=0; row< dim; row++) {
  // REVERSE OF exportClassInst.arrayToExport[row][sig]=ptr_sig[row];
-     data[0]=solarray[row][0];
-     data[1]=solarray[row][1];
-     exports.push_back(data[0]);
-     exports.push_back(data[1]);     
+     data.x=solarray[row][0];
+     data.y=solarray[row][1];
+     exports.push_back(data);     
    }
   return 1;
 }
