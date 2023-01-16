@@ -14,9 +14,12 @@ C     2                   FSUB, DFSUB, GSUB, DGSUB, GUESS)
 C     THESE SUBROUTINES ARE PROGRAMMED HERE AND DECLARED "EXTERN" IN 
 C     COLNEW.F
 
+#define PI 3.14157
+#define PI4 0.7854
+      
       SUBROUTINE FSUB (XCOL, ZVAL, F)
       IMPLICIT NONE
-      REAL,POINTER :: XCOL(:)
+      REAL         :: XCOL(:)
       REAL,POINTER :: ZVAL(:)
       REAL,POINTER :: F(:)
       F(1)=ZVAL(2)
@@ -28,7 +31,7 @@ C     COLNEW.F
 C      REAL,DIMENSION(:) :: XCOL
 C      REAL,DIMENSION(:) :: ZVAL
 C      REAL,DIMENSION(:) :: DF
-      REAL,POINTER :: XCOL(:)
+      REAL         :: XCOL
       REAL,POINTER :: ZVAL(:)
       REAL,POINTER :: DF(:)
       DF(1)=0.0
@@ -39,36 +42,55 @@ C      REAL,DIMENSION(:) :: DF
 
       SUBROUTINE GSUB (IZETA, ZVAL, GVAL)
       IMPLICIT NONE
-      INTEGER, DIMENSION(:) :: IZETA
+      INTEGER            :: IZETA
       REAL, DIMENSION(:) :: ZVAL
-      REAL, DIMENSION(:) :: GVAL
+      REAL               :: GVAL
       ! normally GVAL(1)=ZVAL(1)-0.0
       ! AND      GVAL(2)=ZVAL(2)-1.0
       ! BUT how can it know the time values?
+      ! Re: IT SEEMS FROM LINE 2081.. FROM COLNEW.f THAT IZETA
+      ! IS AN INDEX OF THE BC AND ZVAL IS THE CORRESP VECTOT AT TIME
+      ! OF IZETA, GVAL IS A SCALAR
+      IF (IZETA.eq.1) THEN
+         GVAL=ZVAL(1)-0.0 ! left
+      ELSE IF (IZETA.eq.2) THEN ! right
+         GVAL=ZVAL(1)-0.897
+      ENDIF
       END SUBROUTINE GSUB
 
 
       SUBROUTINE DGSUB (IZETA, ZVAL, DG)
       IMPLICIT NONE
-      INTEGER, DIMENSION(:) :: IZETA
-
-      REAL, DIMENSION(:) :: ZVAL
-      REAL, DIMENSION(:) :: DG
+      INTEGER            :: IZETA
+      REAL,POINTER       :: ZVAL(:)
+      REAL,POINTER      :: DG(:)
+      DG(1)=1.0  ! VALID FOR BOTH LEFT AND RIGHT BC CONDITIONS
+      DG(2)=1.0
       END SUBROUTINE DGSUB
 
       SUBROUTINE GUESS (XII, ZVAL, DMVAL)
       IMPLICIT NONE
-      REAL, DIMENSION(:) :: XII
-      REAL, DIMENSION(:) :: ZVAL
-      REAL, DIMENSION(:) :: DMVAL
+      REAL               :: XII
+      REAL,POINTER       :: ZVAL(:)
+      REAL,POINTER       :: DMVAL(:)
+C   XII IS AN INPUT: IE A SCALAR, BUT IT IS USEFUL TO REMIND THAT
+C     THE INITIAL MESH FURNISHED HAS SIZE NMAX*(K)+1
+C   ZVAL HAS MSTAR COMPONENTS AND DMVAL HAS NCOMP (ALL Mjth DERIVs)
+C   COMPONENTS
+C      INTEGER            :: I
+         ZVAL(1)=SIN(2*XII)  ! A REASONABLE APPROX TO VDPOL(1,2*2)
+                             ! BY A SINE SOLUTION
+         ZVAL(2)=2*COS(2*XII)
+
+         DMVAL(1)=-4*SIN(2*XII)
       END SUBROUTINE GUESS
 
 C  MAIN PROGRAM:
       PROGRAM VALIDVANDERPOL
 
+        IMPLICIT NONE
         EXTERNAL FSUB, DFSUB, GSUB, DGSUB, GUESS
         EXTERNAL COLNEW
-C      IMPLICIT NONE
 C      VARIABLES FOR THE PROBLEM VAN DER POL
 C      	X1'=X2
 C       X2'=(1-X1^2)*X2-4*X1
@@ -77,44 +99,30 @@ C       GENERIC VARS
 C        IMPLICIT REAL*8 (A-H,O-Z)  ! NOT ALLOWED WITH ALLOCATE !
         INTEGER,DIMENSION(:),ALLOCATABLE    :: DUMMY
 
-        INTEGER :: K, MMAX,MSTAR
-C      VARIABLES TO BE PASSED TO COLNEW:
-        INTEGER :: NCOMP=2   ! no of diff. equation
+        INTEGER :: K,KD,NMAX,MMAX,MSTAR,NREC
+        INTEGER :: NCOMP
         INTEGER,DIMENSION(1) :: M= (/ 2 /)
-        REAL :: ALEFT=0.0
-        REAL :: ARIGHT=1.0
-        REAL,DIMENSION(2) :: NINTV=(/ 0.0, 1.0 /)
+        REAL :: ALEFT
+        REAL :: ARIGHT
+        REAL,DIMENSION(2) :: NINTV
         INTEGER, DIMENSION(11) :: IPAR
-C       IPAR(1)=1  ! non linear
-C       IPAR(2)=4  ! no collocation pts per subinterval 
-C       IPAR(3)=4  ! no subintervals
-C       IPAR(4)=2  ! no solution and derivative tolerances
-C       IPAR(5)=396 ! fspace dim see after
-C       IPAR(6)=21  ! ispace dim see after
-C       IPAR(7)=-1  ! output control
-C       IPAR(8)=1   ! iread
-C       IPAR(9)=0   ! iguess
-C       IPAR(10)=0  ! pb regular
-C       IPAR(11)=3  ! no points in interval alongside bounds
-C       INTEGER,DIMENSION(11) :: IPAR=(/ 1, 4, 4, 2, 396, 21, -1, 1, 0, 0, 3 /)
-C      4 intervals, each has 4 points..
-C       21=3+((4*4)+2), 396=4+3*2+(5+4*4)*(4*4+2)+(2*2-2)*2*2 
-        INTEGER,DIMENSION(1) :: LTOL=(/ 2 /)
-        REAL,DIMENSION(2) :: TOL=(/ 1.0E-4, 1.0E-4 /)
-        REAL,DIMENSION(3) :: FIXPNT=(/ 0.25, 0.50, 0.75 /)
+        INTEGER IPAR5,IPAR6
+        INTEGER,DIMENSION(1) :: LTOL
+        REAL,DIMENSION(2) :: TOL
+        REAL,DIMENSION(3) :: FIXPNT
         INTEGER :: ALLOCSTAT
         INTEGER :: I
 C       REAL,DIMENSION(21) :: ISPACE
         INTEGER,POINTER :: ISPACE(:)
         REAL,POINTER :: FSPACE(:)
 C       REAL,DIMENSION(:),ALLOCATABLE :: FSPACE
-        INTEGER :: IFLAG=1
+        INTEGER :: IFLAG
 
 C       VARIABLES TO BE PASSED TO OTHER SUBROUTINES THAT ARE NORMALLY CALLED BY COLNEW:
         REAL,POINTER :: ZETA(:)
         INTEGER :: IZCOUNT
 C       REAL,DIMENSION(:),ALLOCATABLE :: ZETA
-        INTEGER        :: KSTORE, NOLD, LXIOLD, LXI, LG, NREC, LVAL
+        INTEGER        :: KSTORE, NOLD, LVAL
         REAL,DIMENSION(:),ALLOCATABLE :: VALSTR      
         REAL,DIMENSION(28,4)          :: ASAVE  
         REAL,DIMENSION(:),ALLOCATABLE :: XIOLD
@@ -123,22 +131,67 @@ C       REAL,DIMENSION(:),ALLOCATABLE :: ZETA
 C       VARIABLES FOR EVALUATION OF THE SOLUTION
         INTEGER,DIMENSION(:),ALLOCATABLE :: ISPACECPY
         REAL,DIMENSION(:),ALLOCATABLE :: FSPACECPY
-        REAL     :: XVAR
+        REAL     :: XVAR, HD6
         REAL,DIMENSION(:),ALLOCATABLE :: XSOL
         REAL,DIMENSION(2) :: ZVAR
         REAL,DIMENSION(:),ALLOCATABLE :: ZSOL
-
-        ALLOCATE(ISPACE(21), ISPACECPY(21), STAT=ALLOCSTAT)
-        DO 20 I=1,21
+        INTEGER    ::  LXI, LG, LXIOLD, LW, LV, LZ, LDMZ, LDELZ 
+        INTEGER    ::  LDELDZ, LDQZ, LDQDMZ, LRHS, LVALST, LSLOPE
+        INTEGER    ::  LACCUM, LSCL, LDSCL, LPVTG, LPVTW, LINTEG 
+C 
+        IFLAG=-1
+        K=4
+        KD=K*1
+        NMAX=10
+        MSTAR=2
+        NREC=2
+C      VARIABLES TO BE PASSED TO COLNEW:
+        NCOMP=2   ! no of diff. equation
+        ALEFT=0.0
+        ARIGHT=2*PI/2/4
+        NINTV(1)= 0.0
+        NINTV(2)= PI4
+      IPAR5=K+3*MSTAR+(5+K*NCOMP)*(K*NCOMP+MSTAR)+(2*MSTAR-NREC)*2*MSTAR
+      IPAR5=NMAX*IPAR5
+      IPAR6=3+(K*NCOMP+MSTAR)
+      IPAR6=IPAR6*NMAX
+       IPAR(1)=1  ! non linear
+       IPAR(2)=K  ! 4 no collocation pts per subinterval 
+       IPAR(3)=NMAX  ! 4 no subintervals
+       IPAR(4)=2  ! no solution and derivative tolerances
+       IPAR(5)=IPAR5  ! 720 ispace dim see after
+       IPAR(6)=IPAR6  ! 90 ispace dim see after
+       IPAR(7)=-1  ! output control
+       IPAR(8)=1   ! iread
+       IPAR(9)=0   ! iguess
+       IPAR(10)=0  ! pb regular
+       IPAR(11)=3  ! no points in interval alongside bounds
+C      IPAR=(/ 1,4,4,2,720,90,-1,1,1,0,3 /)
+C      4 intervals, each has 4 points..
+C       90=NMAX*sizei wh sizei:=3+((4*1)+2), 720=NMAX*sizef wh. sizef:=72=4+3*2+(5+4*1)*(4*1+2)+(2*2-1)*2*2 
+        LTOL(1)= 2 
+        TOL(1)= 1.0E-4
+        TOL(2)= 1.0E-4 
+        FIXPNT(1)= 0.25
+        FIXPNT(2)= 0.50
+        FIXPNT(3)= 0.75
+       ALLOCATE(ISPACE(IPAR6), ISPACECPY(IPAR6), STAT=ALLOCSTAT)
+        DO 20 I=1,IPAR6
           ISPACE(I)=0
    20   CONTINUE
 
-        ALLOCATE(FSPACE(396), FSPACECPY(396), STAT=ALLOCSTAT)
-        DO 30 I=1,396
+        ALLOCATE(FSPACE(IPAR5), FSPACECPY(IPAR5), STAT=ALLOCSTAT)
+        DO 30 I=1,IPAR5
            FSPACE(I)=0.0
    30   CONTINUE
-
-        ALLOCATE(ISPACE(21))
+C   From documentation, the FSPACE(ith) first numbers are shall be equal
+C   from the x(n+1) points of the initial mesh (with 1=ALEFT and
+C   n+1=ARIGHT   
+        FSPACE(1)=ALEFT        
+        DO 31 I=1,NMAX-1
+           FSPACE(I+1)=I*(ARIGHT-ALEFT)/NMAX
+   31   CONTINUE
+        FSPACE(NMAX+1)=ARIGHT
 
         IZCOUNT=4+3*M(1)+(5+IPAR(2)*IPAR(3))*(IPAR(2)*IPAR(3)+2)
      1                +(2*M(1)-2)
@@ -161,10 +214,25 @@ C
       LXI = 1
       LG = LXI + NMAX + 1
       LXIOLD = LG + 2*MSTAR * (NMAX * (2*MSTAR-NREC) + NREC)
-      IZ = (NOLD-1) * MSTAR + 1
-      IDMZ = (NOLD-1) * K * NCOMP
+      LW = LXIOLD + NMAX + 1
+      LV = LW + KD**2 * NMAX
+      LZ = LV + MSTAR * KD * NMAX     !(NOLD-1) * MSTAR + 1
+      LDMZ = LZ + MSTAR *(NMAX + 1)  !(NOLD-1) * K * NCOMP
+      LDELZ = LDMZ + KD * NMAX
+      LDELDZ = LDELZ + MSTAR * (NMAX + 1)
+      LDQZ = LDELDZ + KD * NMAX
+      LDQDMZ = LDQZ + MSTAR * (NMAX+ 1)
+      LRHS = LDQDMZ + KD * NMAX
+      LVALST = LRHS + KD * NMAX + MSTAR
+      LSLOPE = LVALST + 4 * MSTAR * NMAX
+      LACCUM = LSLOPE + NMAX
+      LSCL = LACCUM + NMAX + 1
+      LDSCL = LSCL + MSTAR * (NMAX + 1)
+      LPVTG = 1
+      LPVTW = LPVTG + MSTAR * (NMAX + 1)
+      LINTEG = LPVTW + KD * NMAX
 
-      ALLOCATE(VALSTR(LVAL), XIOLD(LXIOLD), Z(IZ), DMZ(IDMZ),
+      ALLOCATE(VALSTR(LVAL), XIOLD(LXIOLD), Z(LZ), DMZ(LDMZ),
      1         STAT=ALLOCSTAT) 
       ! index token from loops of routines of colnew
 C     THE PORTION TO TEST AS A FIRST TRY
