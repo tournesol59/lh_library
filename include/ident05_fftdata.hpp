@@ -38,13 +38,14 @@ class IDENT05_IODATA {
 
 	public:
 // constructor
-  IDENT05_IODATA(Number size, char* giveFileName) ;
+  IDENT05_IODATA(Index size, Number fTs, const char* giveFileName) ;
 
   ~IDENT05_IODATA();
 
   Index sizefft;
   Number samplefft;
-
+  Number Ts;
+  
   Index  sizeevalsol; // length of following table
     
    char FileName[14]; // name of the file for export (exportToDisk)
@@ -61,5 +62,29 @@ class IDENT05_IODATA {
 	private:
 };
 
+//---------------------------------------------
+// OTHER CLASS DEDICATED to export (possibly import) more signals as time (x,y1,y2..) arrays
+//
+class IDENT05_TABDATA {
+	public:
+// constructor
+  IDENT05_TABDATA(Index size, Index nsigs, char* giveFileName) ;
+
+  ~IDENT05_TABDATA();
+
+  Index numsigs;  // time included
+  Index sizeevalsol;
+  Number sample;
+
+   char FileName[14]; // name of the file for export (exportToDisk)
+
+   bool read_extern_output(std::vector<double> &li_reals);
+
+	// similar method as IDENT05_IODATA::exportToDisk
+   bool exportToDisk(std::vector<double> &li_reals);
+
+	private:
+
+};
 
 #endif
