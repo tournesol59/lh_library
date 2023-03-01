@@ -1,0 +1,87 @@
+Bonjour,
+Dans le cadre d'un projet d'identification (pour monter un package de Matlab
+pour savoir), je cherche à faire une maquette de classes pour avoir du
+polymorphisme. Je ne peux pas montrer tout le code mais la declaration de la
+maquette est la suivante:
+
+{code decl_MaClasse.hpp}
+
+Dans l'implémentation, les constructeurs en particulier ressemblent à ça:
+
+{code impl_MaClasse.cpp}
+
+J'obtiens le message d'erreur suivant
+decl_basiclsq.hpp:56:8: error: candidates are: IDENT05_BASICLSQ::IDENT05_BASICLSQ(const IDENT05_BASICLSQ&)
+Pourtant je n'introduit pas d'operation speciale dans le destructeur, ce qui
+pousserait a appliquer la regle des trois.
+
+problème résolu mais on ne sait comment
+
+
+autre truc trouvé: std::pair
+std::vector< std::pair<Type1, Type2> > vecteur_AB;
+
+autre sujet: Baisse de peformances apres redefinition d'une methode dans une
+classe fille: a retenir:
+  si je redefini une methode virtuelle pure dans une classe fille, c'est du
+polymorphisme
+  mais si c est une redefinition (simple) d une methode de la classe mère,
+cela s'appelle masquer et cela peut causer des pbs: en particulier si B herite
+de A et que B::b() fait du masquage, ca masque tous les overloads faits dans
+la classe A.
+
+Fred: mon message sur le forum (26/2)
+Bonjour,
+J'ecris un programme de simulation (devant s'interfacer avec Matlab mais pas
+aujourd'hui) et je cherche a decomposer en classes: certaines pour faire des
+operations sur les donnees, d'autres prenant ces donnees pour faire des
+imports/exports sur fichier. En gros je voudrais savoir comment passer un
+objet std::vector<double> d'une classe a une autre.
+Pour l'instant une maquette de mon code ressemble à ca (ce n'est qu'une
+maquette):
+
+class MaClasseBase {
+
+   public:
+     MaClasseBase(std::vector<double> entrees, int dsize, int dnp);
+     ~MaClasseBase(void);
+  //   MaClasseBase(const MaClasseBase &source);
+  //   MaClasseBase &operator=(const MaClasseBase &source);
+
+     virtual bool entre(void);
+     bool recalcule(void); // va appeler entre()
+     // virtual bool recalcule(void);
+    bool pass_iodata(std::vector<std::pair<double,double>> listy, int select);
+   
+     std::vector<double> valeurs;
+     std::vector<double> newvaleurs;
+     
+   protected:
+     std::vector<double> coeffs;
+     int size;
+     int np;  
+};
+
+le corps de la methode membre pass_iodata(listy, select) contient:
+
+  int k, sel=1;
+  std::pair<double, double> singleton;
+
+
+  for (k=0; k<size; k++) {
+      singleton.first = (double (k))*Ts;
+      switch (sel) {
+         case 1:  singleton.second = newvaleurs[k];  // more case when complete
+		  break;
+      }
+      std::cout << singleton.second << " ";
+      list_yh.push_back( singleton );
+  }
+
+ aurait-il un moyen de se remplacer cette méthode par un constructeur copie de
+l'objet std::vector<double> newvaleurs? Ou de spécifier aussi une methode 
+exportant ce vecteur dans un fichier en prenant une reference const en entree?
+Je suis juste à la recherche d'une version, pas forcement optimisee, 
+mais sans trop reinventer. Je vous remercie d'avance
+
+
