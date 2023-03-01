@@ -1,0 +1,25 @@
+#include <iostream>
+#include <fstream>    // std::ifstream, std::ofstream 
+#include <sstream>
+#include <cstring>
+
+/**
+ *  Stream Class
+ */
+class MyStreamFile {
+   // simply stores the name of an asciii -file
+   // and function to display its content line-by-line
+   // on the screen. Used to test the C++ exception dealing with
+	public:
+    MyStreamFile(const char *fname, int taille, char *sdata);
+    ~MyStreamFile;
+    int ReadFromFile();
+    int WriteData();
+    // int EndStreamFile();
+
+	protected:        
+    char *szFileName;
+    int taille;
+    char *data;
+};
+
