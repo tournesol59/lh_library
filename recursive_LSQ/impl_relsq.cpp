@@ -10,6 +10,8 @@ IDENT05_RELSQ::IDENT05_RELSQ(std::vector<double> ydata, std::vector<double> udat
 	y_h(std::vector<double> (dsize, 0.0)),
 	y_hd(std::vector<double> (dsize, 0.0)),
 	y_hdd(std::vector<double> (dsize, 0.0)),
+	y_f(std::vector<double> (dsize, 0.0)),
+	y_fd_con(std::vector<double> (dsize, 0.0)),	
 	pe_y(std::vector<double> (dsize, 0.0)),
 	pe_yd(std::vector<double> (dsize, 0.0)),
 	pe_ydd(std::vector<double> (dsize, 0.0)),
@@ -41,10 +43,10 @@ bool IDENT05_RELSQ::test_assign()
    return 1;
 }
 */
-bool IDENT05_RELSQ::pass_iodata(std::list<dpair> &list_yh, std::string str_data)
+bool IDENT05_RELSQ::pass_iodata(std::vector<std::pair<double,double>> &list_yh, std::string str_data)
 {
   int k, sel=1;
-  dpair singleton;
+  std::pair<double,double> singleton;
 
   if (!(str_data.compare("yori"))) {
 	  std::cout << "match yori\n";
@@ -76,33 +78,53 @@ bool IDENT05_RELSQ::pass_iodata(std::list<dpair> &list_yh, std::string str_data)
 	  sel=9;
   }
   for (k=0; k<size; k++) {
-      singleton.x = (double (k))*Ts;
+      singleton.first = (double (k))*Ts;
       switch (sel) {
-         case 1:  singleton.y = y[k];
+         case 1:  singleton.second = y[k];
 		  break;
-	 case 2:  singleton.y = u[k];
+	 case 2:  singleton.second = u[k];
 		  break;
-         case 3:  singleton.y = y_h[k];
+         case 3:  singleton.second = y_h[k];
 		  break;
-	 case 4:  singleton.y = y_hd[k];
+	 case 4:  singleton.second = y_hd[k];
 		  break;
-	 case 5:  singleton.y = y_hdd[k];
+	 case 5:  singleton.second = y_hdd[k];
 		  break;
-	 case 6:  singleton.y = pe_y[k];
+	 case 6:  singleton.second = pe_y[k];
 		  break;
-	 case 7:  singleton.y = pe_yd[k];
+	 case 7:  singleton.second = pe_yd[k];
 		  break;
-	 case 8:  singleton.y = pe_ydd[k];
+	 case 8:  singleton.second = pe_ydd[k];
  		  break;
-         case 9:  singleton.y = myvar[k];
+         case 9:  singleton.second = myvar[k];
 		  break;
       }
-      std::cout << singleton.y << " ";
+      std::cout << singleton.second << " ";
       list_yh.push_back( singleton );
   }
 
   return 1;
 }
+
+bool IDENT05_RELSQ::apply_derivative_filter(int k, double poleT1, int manage) {
+  
+  if (k==0) {
+     y_f[k]=y[k];
+  }
+  else {
+     y_f[k]=y_f[k-1]*poleT1+y[k]*(1-poleT1);
+     y_fd_con[k] = (y_f[k]-y_f[k-1])/Ts;
+  }
+  // manage signal to operate with follwing recursive_algorithm
+  if (manage==1) {  // if =1, erase the original data with the small filtered one
+     y[k]=y_f[k];
+  }
+  else if (manage==2) {
+     y[k]=y_fd_con[k];
+  }
+  return 0;
+}
+
 
 bool IDENT05_RELSQ::recursive_algorithm(int k, int order) {
   double y_h_1 =0.0;
@@ -321,22 +343,22 @@ bool  IDENT05_REEST::fifthstep_lseinstr()
 	return 1;
 }
 
-bool IDENT05_REEST::pass_iodata(std::list<dpair> &list_yh, std::string str_data)
+bool IDENT05_REEST::pass_iodata(std::vector<std::pair<double,double>> &list_yh, std::string str_data)
 {
   int k, sel=1;
-  dpair singleton;
+  std::pair<double, double> singleton;
 
   if (!(str_data.compare("yori"))) {
 	  std::cout << "match yori\n";
 	  sel=1;
   }
   for (k=0; k<size; k++) {
-      singleton.x = (double (k))*Ts;
+      singleton.first = (double (k))*Ts;
       switch (sel) {
-         case 1:  singleton.y = y[k];  // more case when complete
+         case 1:  singleton.second = y[k];  // more case when complete
 		  break;
       }
-      std::cout << singleton.y << " ";
+      std::cout << singleton.second << " ";
       list_yh.push_back( singleton );
   }
 

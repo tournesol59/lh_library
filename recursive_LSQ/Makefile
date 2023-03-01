@@ -7,11 +7,11 @@ LOADER=/c/mingw/bin/mingw32-g++
 LOADOPTS= -g 
 
 #library downloaded from netlib.org: one must link ALL of them
-INCLAPACKE=/home/Utilisateur/lapack-3.8.0/LAPACKE/include
+INCLAPACKE=../../lapack-3.8.0/LAPACKE/include
 #TMGLIB=/home/Utilisateur/lapack_inst/libtmglib.a
-LAPACKLIB=/home/Utilisateur/lapack_inst/liblapack.a
-BLASLIB=/home/Utilisateur/lapack_inst/librefblas.a
-LAPACKELIB=/home/Utilisateur/lapack_inst/liblapacke.a
+LAPACKLIB=../../lapack_inst/liblapack.a
+BLASLIB=../../lapack_inst/librefblas.a
+LAPACKELIB=../../lapack_inst/liblapacke.a
 
 # std C++11 thus
 CINCLUDE=../include/ 

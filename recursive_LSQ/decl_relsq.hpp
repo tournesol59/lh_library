@@ -2,6 +2,9 @@
  * Class IDENT05_RELSQ implements actually time-vector of data 
  * for being identified parametrically. For the moment only non regressive
  * linear (a*t+b) are implemented
+ *
+ * However, second part of this file are tentative of project
+ * declaration about the experimental variable method (not continued)
  */
 #include <iostream>
 #include <cstring>
@@ -15,6 +18,8 @@
 using namespace lhlib;
 
 int generate_rdom_example(std::vector<double> &sig, int n, double ca, double cb, double fvar);
+int generate_arN_example(std::vector<double> &sig, int n, int m, std::vector<double> &ar, double fvar) ;
+int generate_from_file(std::vector<double> &sig, int &Npty, const char * filename, int n, int m) ;
 
 class IDENT05_RELSQ {
 
@@ -23,19 +28,23 @@ class IDENT05_RELSQ {
 		    int dsize, int dn, double fTs, double fvarian);
    ~IDENT05_RELSQ();
 
+    bool apply_derivative_filter(int k, double poleT1, int manage); // this must always be called firstly if you want to operate on a filtered signal
     bool recursive_algorithm(int k, int order);
-    bool test_assign();
-    bool pass_iodata(std::list<dpair> &list_yh, std::string str_data);
+    
+    bool pass_iodata(std::vector<std::pair<double,double>> &list_yh, std::string str_data);
 
     std::vector<double> y;  // known size at init
     std::vector<double> u;
     std::vector<double> y_h; // size equal to length(y) or u
-    std::vector<double> y_hd;
-    std::vector<double> y_hdd;
-    std::vector<double> pe_y;
-    std::vector<double> pe_yd;
-    std::vector<double> pe_ydd;
+    std::vector<double> y_hd; // identified derivative of y_h signal
+    std::vector<double> y_hdd; // identified second derivative of y_h signal
+    std::vector<double> pe_y; // evolution of the covariance of (y-y_h)
+    std::vector<double> pe_yd; // ... covariance of derivative
+    std::vector<double> pe_ydd; // .. covariance of second derivative
+    // note that the last covariance should decrease to zero
     std::vector<double> myvar;
+    std::vector<double> y_f; // output from T1 filter
+    std::vector<double> y_fd_con; // output from derivate
   private:
     int size;  // size of the original data
     int n;  // order for future recursive filter algorithms
@@ -145,7 +154,7 @@ class IDENT05_RELSQ {
     bool thirdstep_getdisc();
     bool fourthstep_filterdvals(int k);
     bool fifthstep_lseinstr();
-    bool pass_iodata(std::list<dpair> &list_yh, std::string str_data);
+    bool pass_iodata(std::vector<std::pair<double,double>> &list_yh, std::string str_data);
 
   private:
     int size;
