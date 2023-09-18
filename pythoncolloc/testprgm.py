@@ -1,7 +1,7 @@
 import numpy as num
 import packcollocpts as cpts
 
-#test third-order
+#test third-order of a linear ode1
 B_1=0.9  #shrink time to avoid inf singularity of 1/(1-x**2) at -1,1
 eps_2=0.1
 B_2=0.9 # same signficance as B_1 but applies to poslnfunc
