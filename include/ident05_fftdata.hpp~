@@ -42,7 +42,7 @@ class IDENT05_IODATA {
 //   static IDENT05_IODATA getInstance(Index size, Number fTs, const char* giveFileName);
    IDENT05_IODATA(Index size, Number fTs, const char* giveFileName) ;
    IDENT05_IODATA(const IDENT05_IODATA & idsrc);
-   IDENT05_IODATA &operator=(const IDENT05_IODATA & idsrc); 
+   IDENT05_IODATA &operator=(const  IDENT05_IODATA & idsrc); 
    ~IDENT05_IODATA();
 
    // vector imported from y text file

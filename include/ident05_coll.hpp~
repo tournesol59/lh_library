@@ -131,7 +131,6 @@ class IDENT05_COLL {
 
       // Content from InputData read
       Number dataarray[2000][6]; //  0 = t, 1 = ut, 2 = yt, 3=c2, 4=c1, 5=c0
-      Number yguessed[100][2];      
       Number solarray[2000][2]; //yt_approx
 };
 
