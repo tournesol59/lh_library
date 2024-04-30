@@ -27,15 +27,15 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
 {
 /*eqn Problem type: */
 //  type_eqn=typode;
-  equ1[0]=16.0; equ1[1]=1.0;equ2[2]=4.0;
+  equ1[0]=1.0; equ1[1]=0.0;equ2[2]=1.0;
   equ2[3]=1.0;equ2[4]=0.0;equ2[5]=0.0; equ2[6]=0.0;equ2[7]=1.0;equ2[8]=0.0;  //  (xy"+y'+xy=0) Bessel
  boundry[0]=0.0;
  boundry[1]=1.0;
 
 /* Input File Name */
   lenFileNameInp = 8;  // do not change this value
- // strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
- // std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
+  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
+  std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
  // strncpy(strCodeNameInp, CodeNameInp, lenFileNameInp);   // works on MInGW not on Linux
  // std::cout << "Have input(2) file name: " << strCodeNameInp << "\n";
 
@@ -58,12 +58,46 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
   num_total_coeffs=(order+1)*num_ranges;
   predictparams[0]=1.0;
   predictparams[1]=2.0;
+  double yguessed[]=new double[41][2];
 }
 
 IDENT05_COLL::~IDENT05_COLL() 
 {
 }
+/** move this part in a separate source code file: ident05_collinput
+bool IDENT05_COLL::read_parse_file() 
+{
+   Index row,col;
 
+// Open the input file, which is a text file with 6 columns
+  std::ifstream lh_file;
+  lh_file.open("TheFile", std::ifstream::in);  // test w/o variable Name
+  
+  row=0;
+  while ((!lh_file.eof()) && (row<41)) {
+//  while (lh_file.good()) {
+      std::string line; 
+      std::getline(lh_file, line);
+    
+      std::stringstream ss(line);
+      col = 0;
+      while(ss >> dataarray[row][col]) col++;
+#ifdef __TEST_COLL_ONLY__
+      std::cout << "tf= "  << dataarray[row][0] << " ";
+      std::cout << "utf= " << dataarray[row][1] << " ";
+      std::cout << "ytf= " << dataarray[row][2] << " ";
+      std::cout << "c2f= " << dataarray[row][3] << " ";
+      std::cout << "c1f= " << dataarray[row][4] << " ";
+      std::cout << "c0f= " << dataarray[row][5] << "\n";
+#endif
+      row++;
+  }
+   num_rows=row;
+   lh_file.close();
+
+   return 0;
+}
+*/
 
 bool IDENT05_COLL::read_parse_code() {
    int maxrow, row, col;
@@ -544,8 +578,16 @@ bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end
 
 	  t=times_end[k+1];
 	  boundary_all[2*(k)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
-	  std::cout << "PRED NORM and NREPEAT : " << boundary_all[2*(k)] << " " << boundary_all[2*(k)+1] << "\n";
+
          } 
+		 else if (repeat_predict==COL_TYP_BVP_GUESSED {
+			//t=times_end[k];
+			// complete here solution
+			//boundary_all[2*(k)]==yguessed[2*num_points*(k-1)+num_points-1][1];
+			//t=time_end[k+1];
+			//boundary_all[2*(k)+1]==yguessed[2*num_points*(k)+num_points-1][1];
+		
+		 }
          else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
          boundary_all[2*(k)] = 0.0;
          boundary_all[2*(k)+1] = predictparams[0]*2*3.14156; // /predictparams[1]
@@ -647,7 +689,7 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
   std::ofstream lh_test;
   lh_test.open("TheTest", std::ofstream::out);  // test w/o variable Name
   row=0;
-  while (row<num_ranges*num_points) {
+  while (row<40) {
 //  while (lh_test.good()) {
       lh_test << solarray[row][0] << "\t";
       lh_test << solarray[row][1] << "\n";
@@ -658,7 +700,7 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 #ifdef __TEST_COLL_ONLY__  
   std::cout << " *************** This is the solution solved by collocation ****************** \n"; 
   row=0;
-  while (row<num_ranges*num_points) {
+  while (row<40) {
       std::cout << "tf= " << solarray[row][0] << " ";
       std::cout << "ytf= " << solarray[row][1] << "\n";
       row++;
@@ -719,13 +761,12 @@ bool IDENT05_COLL::pass_dataarray_col(Index dim, li_doubles &exports) {
 
    Index row;
   // Number data[2];
-   // dpair data;
-   std::pair<double,double> data;
+   dpair data;
    
    for (row=0; row< dim; row++) {
  // REVERSE OF exportClassInst.arrayToExport[row][sig]=ptr_sig[row];
-     data.first=solarray[row][0];
-     data.second=solarray[row][1];
+     data.x=solarray[row][0];
+     data.y=solarray[row][1];
      exports.push_back(data);     
    }
   return 1;

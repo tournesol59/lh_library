@@ -31,7 +31,6 @@ int main(int argc, char ** argv) {
   li_doubles datatimesol;  // idem
 
   // solver class
-  std::cout << "Instanciate the collocation class \n"; 
   IDENT05_COLL cnClassInst=IDENT05_COLL(6,strFileName,strCodeName);
 
   // data solution container and class list<T>

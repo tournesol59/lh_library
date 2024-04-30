@@ -34,8 +34,8 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
 
 /* Input File Name */
   lenFileNameInp = 8;  // do not change this value
- // strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
- // std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
+  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
+  std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
  // strncpy(strCodeNameInp, CodeNameInp, lenFileNameInp);   // works on MInGW not on Linux
  // std::cout << "Have input(2) file name: " << strCodeNameInp << "\n";
 
