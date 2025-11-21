@@ -28,9 +28,11 @@ LIBS=-lm
 
 OBJ=../recursive_LSQ/generate.o \
     ../recursive_project/impl_iogenerate.o \
+    ../recursive_project/impl_optimlsq.o \
     ../recursive_project/impl_basicrelsq.o \
+    ../recursive_project/impl_basicmanlsq.o \
     ../main_cpp/ident05_fftdata.o \
-  test_basiclsq.o
+    test_basiclsq.o
 
 test_basiclsq: ./test_basiclsq.cpp 
 	${CC} ${CXXFLAGS} -o test_basiclsq.o -c $< -I${CINCLUDE}
@@ -46,6 +48,12 @@ impl_basicrelsq: ./impl_basicrelsq.cpp
 
 imp_iogenerate: ./impl_iogenerate.cpp
 	${CC} ${CXXFLAGS} -o impl_iogenerate.o -c $< -I${CINCLUDE}
+
+impl_optimlsq: ./impl_optimlsq.cpp
+	${CC} ${CXXFLAGS} -o impl_optimlsq.o -c $< -I${CINCLUDE}
+
+impl_basicmanlsq: ./impl_basicmanlsq.cpp
+	${CC} ${CXXFLAGS} -o impl_basicmanlsq.o -c $< -I${CINCLUDE}
 
 #main no ref to std=c++11 !
 main: ${OBJ}

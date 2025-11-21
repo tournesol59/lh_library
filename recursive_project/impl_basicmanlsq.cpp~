@@ -15,7 +15,7 @@
 }
 
  IDENT05_MANLSQ::IDENT05_MANLSQ(const IDENT05_MANLSQ &source) :
-	 IDENT05_ABSLSQ(source.y, source.u, source.size, source.na, source.Ts, source.varian), IDENT05_OPTLSQ(source.xinit, source.rhs, source.dim, source.tol)
+
 	 /*
 	size(source.size),
 	y(source.y),
