@@ -1,0 +1,18 @@
+#include <stdio>
+#include <iostream>
+#include <vector>
+
+/* declaration of a class, which must be use to call the file open or generation methods from ../recursive_LSQ/  */
+
+class IDENT05_IOGENERATE {
+
+   protected:
+
+	   char rawDataName1[20];  // pour commencer un seul fichier
+	   int dsize1;
+	   double varian1;
+           char rawDataName2[20];
+           int dsize2;
+	   double varian2;
+}
+

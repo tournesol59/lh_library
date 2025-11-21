@@ -1,0 +1,15 @@
+/* demonstration methodes virtuelles pour definir une methode de IdentA fa
+ * qui appelle une autre methode ga et ga est surchargee dans 
+ * IdentB::IdentA. Si on ne fait rien IdentB::fa va appeler ga de la class mere
+ */
+
+#include <iostream>
+#include <cstring>
+#include <vector>
+#include "../include/lhTypes.hpp"
+
+/* ------- declaration of an own class vector (just three constructors and at, pushback ---------*/
+
+
+
+

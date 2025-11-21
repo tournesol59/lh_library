@@ -1,0 +1,143 @@
+/*
+ * a program test of the matrixop.class
+ * FPeugny LTS
+ */
+#include "../include/ident05_fftdata.hpp"
+#include "./decl_relsq_copy.hpp"
+#include "./decl_matrixop.h"
+#include "./decl_vectorop.h" 
+
+// declarer dans ce fichier seulement (cest une astuce) une extension de la classe IDENT05_RELSQ pour reimplementer les methodes predict,innovation,update
+
+class IDENT05_RELSQ_ENH : public IDENT05_RELSQ {
+	public:
+    IDENT05_RELSQ_ENH(std::vector<double> ydata, std::vector<double> udata, int dsize, int dn, double fTs, double fvarian); 
+   ~IDENT05_RELSQ_ENH();   
+   // rien besoin de definir sauf peut etre une methode de test des donnees dentree
+    bool pass_iodata(std::vector<std::pair<double,double>> &list_yh, std::string str_data); // one must redeclare it
+
+    bool test_inputdata();
+    // si en fait il faut les 3 methodes
+    bool predict(int ind, double & epsilon);
+    bool innovation(int ind, double epsilon);
+    bool update(int ind);
+        protected:
+//    std::vector<double> coeffs; // INFO pour ce soir seulement, remplacer par vectorop
+    vectorop coeffs;
+  //  matrixop phi; // TBD
+    matrixop matrixF;
+    matrixop matrixK;
+};
+
+// on redefinit simplement un constructeur: fait appel au construct de classe mere
+IDENT05_RELSQ_ENH :: IDENT05_RELSQ_ENH(std::vector<double> ydata, std::vector<double> udata, int dsize, int dn, double fTs, double fvarian) : IDENT05_RELSQ(ydata, udata, dsize, dn, fTs, fvarian) ,
+	matrixF(matrixop(dn,dn)),
+	matrixK(matrixop(dn,1))
+{
+   double val=1.0;
+   for (int i=0; i<n; i++) {
+      val = val*0.8;
+      coeffs.push_back(val);
+   } 
+   
+   for (int k=0; k<n; k++) {   
+      for (int l=0; l<n; k++) {
+       matrixF(k,l)=0.;
+      }
+      matrixF(k,k)=100.;
+   } 
+
+}
+
+IDENT05_RELSQ_ENH :: ~IDENT05_RELSQ_ENH()
+{
+   
+}
+
+bool IDENT05_RELSQ_ENH :: test_inputdata() {
+    return (int(y.size()) == size);
+}
+
+bool IDENT05_RELSQ_ENH :: predict(int ind, double & epsilon) {
+   int flag=0;
+   // vectorop phi(n); // TBC
+   matrixop phi(n,1);
+   // prepare the good values for phi=y(ind-1), y(ind-2) .. etc
+   for (int i=0; i<n; i++) {
+       phi(i,0)=y.at(ind-i-1);
+   }
+   matrixop tphi(phi);
+   epsilon=tphi.vec_scal_product(coeffs);
+   // simplified for the moment
+   return (bool) flag;
+}
+
+bool IDENT05_RELSQ_ENH :: innovation(int ind, double epsilon) {
+   int flag=0;
+   matrixop temp(n,1);
+   temp.setValues(coeffs);
+   matrixop Keps(matrixK);
+   Keps.multscal(epsilon);
+   temp+=Keps; // test this
+   coeffs=temp.getValues(); // test this
+   return (bool) flag;
+}
+
+bool IDENT05_RELSQ_ENH :: update(int ind) {
+    // only the beginning:
+   matrixop matrixF(n,n);
+   std::vector<double> initvec(n*n);
+   for (int i=0; i<n; i++) {
+      initvec.at(i*n)=1.0/0.01;	   
+   }
+   matrixF.setValues(initvec);
+    //
+   matrixop phi(n,1);
+   for (int i=0; i<n; i++) {
+       phi(i,0)=y.at(ind-i-1);
+   } 
+   matrixop matrixFphi(matrixF);
+   matrixFphi.multiply(phi);
+   // TBC ..
+   // 
+     return (bool) 0;
+}
+
+
+// puis le main:
+int main(int argc, char **argv) {
+// variables au debut: y_data, inputfilename
+
+    char inFileName[14];
+    int Npty=30;
+    std::vector<double> y_data;
+    std::vector<double> u_data=std::vector<double>(Npty, 0.0);
+    std::vector<std::pair<double,double>> lsqoutlist;  // exchange list of doubles // check TBD
+    std::string str_data="yst0";
+    generate_from_file(y_data, Npty, inFileName);
+
+// puis instances de classe
+    double fvarian=0.5;
+    double fTs=0.1;
+    int order=2;
+   
+    IDENT05_RELSQ_ENH instlsqEnh(y_data, u_data, Npty, order, fTs, fvarian);
+
+// puis appels de methodes
+    double epsilon;
+    instlsqEnh.predict(2, epsilon);
+    instlsqEnh.innovation(2, epsilon);
+    instlsqEnh.update(2);
+// export
+
+      //create another export class
+    char explsqFileName[14];
+    strncpy(explsqFileName, "a.lsqo", 7);
+    IDENT05_IODATA explsqClassInst=IDENT05_IODATA(Npty, 0.1, explsqFileName);
+    instlsqEnh.pass_iodata(lsqoutlist, str_data);
+  
+  // recalculated ydata
+    explsqClassInst.exportToDisk(lsqoutlist);
+}
+
+

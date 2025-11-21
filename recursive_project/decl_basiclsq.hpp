@@ -8,6 +8,7 @@
 #include <vector>
 #include <list>
 #include <iterator>
+#include "decl_optimlsq.hpp"
 #include "../include/lhTypes.hpp"
 
 
@@ -42,7 +43,7 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
      IDENT05_ABSLSQ &operator=(const IDENT05_ABSLSQ &source);       
     ~IDENT05_ABSLSQ(void);
 
-	 private:
+	 protected:
        std::vector<double> y;
        std::vector<double> u;
        Index size;
@@ -67,7 +68,7 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
     bool update();
     bool getParams(); 
     
-	 private:
+	 protected:
        std::vector<double> y;
        std::vector<double> u;
        Index size;
@@ -84,22 +85,73 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
 
 /////////////////
 // Inheritance for STATLSQ from BASICLSQ
-/*
- class IDENT05_STATLSQ : public IDENT05_BASICLSQ {
+/**/
+ //class IDENT05_STATLSQ : public IDENT05_BASICLSQ {
+ class IDENT05_STATLSQ : public IDENT05_ABSLSQ {
          public:
      IDENT05_STATLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, int dnb, double fTs, double fvarian );
      IDENT05_STATLSQ(const IDENT05_STATLSQ &source);
      IDENT05_STATLSQ &operator=(const IDENT05_STATLSQ &source);        
-    ~IDENT05_STATLSQ();
-
-	 private:
- //      std::vector<double> y;
- //      std::vector<double> u;
- //      Index size;
- //      Index na;
+    ~IDENT05_STATLSQ(void);
+  bool predict(int k, double yiter, double &epsilon); 
+    bool innovation(double &epsilon);
+    bool update();
+    bool getParams(); 
+    bool pass_iodata(std::list<dpair> &list_yh, std::string str_data);
+ 
+	 protected:
+       std::vector<double> y;
+       std::vector<double> u;
+       std::vector<double> yhat;
+       Index size;
+       Index na;
        Index nb;
- //      Number Ts;
- //      Number varian;
-
+       Number Ts;
+       Number varian;
+       // iterative used variables/structures:
+       std::vector<double> theta;
+       std::vector<double> phi;
+       std::vector<double> matrixK;
+       std::vector<double> matrixF;
+       Number lamb1;
+       Number lamb2;
 }; // end class IDENT05_STATLSQ
-*/
+
+//class IDENT05_STATLSQ : public IDENT05_BASICLSQ {
+ class IDENT05_MANLSQ : public IDENT05_ABSLSQ, public IDENT05_OPTLSQ {
+         public:
+     IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian );
+     IDENT05_MANLSQ(const IDENT05_MANLSQ &source);
+     IDENT05_MANLSQ &operator=(const IDENT05_MANLSQ &source);        
+    ~IDENT05_MANLSQ(void);
+
+     bool algorithm();
+    /* inherited
+     bool fres(std::vector<double> xd, double &res);
+     bool Jac(std::vector<double> xd, std::vector<double> &jac);
+   bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
+   bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
+   */
+	 protected:
+
+       std::vector<double> y;
+       std::vector<double> u;
+       std::vector<double> yhat;
+       Index size;
+       Index na;
+       Index nb;
+       Number Ts;
+       Number varian;
+
+       std::vector<double> theta;
+       std::vector<double> xd;
+       std::vector<double> jacobian;
+       std::vector<double> xinit;
+       std::vector<double> rhs;
+       int dim;
+       double tol;
+       int Itermax;
+       int iter;
+ };
+
+/**/

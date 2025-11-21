@@ -50,7 +50,7 @@ int inverse_nthree_matrix(std::vector<double> &mat, std::vector<double> &invmat)
 	 }
 	 else if ((i==2) && (j==0)) {
 	    factor=mat.at(3*i-6+j+1)*mat.at(3*i-3+j+2) -
-		    mat.at(3*i-3+j+2)*mat.at(3*i-6+j+1);
+		    mat.at(3*i-3+j+1)*mat.at(3*i-6+j+2);
 	 }
 	 else if ((i==2) && (j<2)) {
 	    factor=mat.at(3*i-6+j-1)*mat.at(3*i-3+j+1) -
@@ -60,14 +60,14 @@ int inverse_nthree_matrix(std::vector<double> &mat, std::vector<double> &invmat)
 	    factor=mat.at(3*i-6+j-2)*mat.at(3*i-3+j-1) -
 		    mat.at(3*i-3+j-2)*mat.at(3*i-6+j-1);
 	 }
-         invmat.at(3*j+i)=factor;
+         invmat.at(3*j+i)=factor; // transpose
 
      }
   }
-  determ = mat.at(0)*invmat.at(0) + mat.at(1)*invmat.at(3) + mat.at(2)*invmat.at(6);
+  determ = mat.at(0)*invmat.at(0) - mat.at(1)*invmat.at(3) + mat.at(2)*invmat.at(6); // fred added a minus sign in the middle
   for (i=0; i<3; i++) {
       for (j=0; j<3; j++) {
-	 if (i!=j) {
+	 if ((i+j)%2==1) {
 		 invmat.at(3*i+j)=invmat.at(3*i+j)*(-1.0)/determ;
 	 }
 	 else {
@@ -137,8 +137,8 @@ int multiply_matrix_matrix(std::vector<double> &matA, std::vector<double> &matB,
 	for (k=0; k<n; k++) {
             sum=sum+matA.at(n*i+k)*matB.at(n*k+j);
 	}
+        matC.at(n*i+j)=sum;
      }
-     matC.at(n*i+j)=sum;
   }
       
   return 0;
@@ -185,17 +185,22 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
 	  Ts(fTs),
 	  varian(fvarian)
 {
- // nothing here
   int k;
-  for (k=0; k<dsize; k++) {
+  for (k=0; k<dsize; k++) { //dsize; k++) {
      y[k]=ydata[k];
      u[k]=udata[k];
+    //std::cout << k << "\t" << u[k] << "\t" << y[k] << "\n"; // DEBUG
   }
+    std::cout << "Instance of class type _ABSLSQ created with size " << dsize << "\n";
 } //end constructor
 
 //copy constructor
- IDENT05_ABSLSQ:: IDENT05_ABSLSQ(const IDENT05_ABSLSQ &source) 
+ IDENT05_ABSLSQ:: IDENT05_ABSLSQ(const IDENT05_ABSLSQ &source) : y(source.y),  u(source.u)
 {
+   size=source.size;
+   np=source.np;
+   Ts=source.Ts;
+   varian=source.varian;
 }  
 // afffectation constructor
  IDENT05_ABSLSQ &IDENT05_ABSLSQ :: operator=(const IDENT05_ABSLSQ &source) 
@@ -210,7 +215,7 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
 /***********************************************************
  * derived class IDENT05_BASICLSQ
  *********************************************************/
- IDENT05_BASICLSQ :: IDENT05_BASICLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian) : IDENT05_ABSLSQ(ydata, udata, dsize, dna, fTs, fvarian)
+ IDENT05_BASICLSQ :: IDENT05_BASICLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian) : IDENT05_ABSLSQ(ydata, udata, dsize, dna, fTs, fvarian) , theta(std::vector<double> (dna, 0.0)), phi(std::vector<double> (dna, 0.0)), matrixK(std::vector<double> (dna, 0.0)), matrixF(std::vector<double> (dna*dna, 0.0))
 // IDENT05_BASICLSQ::IDENT05_BASICLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian ) :
 //       y(std::vector<double> (dsize, 0.0)), // constructor this is important
 //       u(std::vector<double> (dsize, 0.0)),
@@ -219,19 +224,26 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
 //       Ts(fTs),
 //       varian(fvarian)
 {
+  std::cout << "delegated call to _ABSLSQ, transmitted param " << dsize << "\n";
  // nothing here
   na=dna;
   int k;
-  for (k=0; k<dsize; k++) {
-     y[k]=ydata[k];
-     u[k]=udata[k];
+  for (k=0; k<dsize; k++) { // REMIND THAT: segfault if y[k],u[k] are initialized for a second time: one time was by base constructor (ABS), other time by derived constructor (STAT) 
+     //y[k]=ydata[k];
+     //u[k]=udata[k];
+    // std::cout << k << "\t" << udata[k] << "\t" << ydata[k] << "\n"; //DEBUG
+  }
+  std::cout << "\n";
+  for (k=0; k < na; k++) {
+     theta[k]=1.0;
   }
 } //end constructor
 
 //copy constructor
 //
- IDENT05_BASICLSQ :: IDENT05_BASICLSQ(const IDENT05_BASICLSQ &source) : IDENT05_ABSLSQ(source)
+ IDENT05_BASICLSQ :: IDENT05_BASICLSQ(const IDENT05_BASICLSQ &source) : IDENT05_ABSLSQ(source),  theta(source.theta), phi(source.phi)
 {
+   na=source.na;
 }  
 // afffectation constructor
  IDENT05_BASICLSQ &IDENT05_BASICLSQ :: operator=(const IDENT05_BASICLSQ &source) //: IDENT05_ABSLSQ(source) 
@@ -247,7 +259,7 @@ bool IDENT05_BASICLSQ::innovation(double &epsilon)
 {
 #ifdef _RELSQ_TEST_FIXED_MATDIM_
 // calculation of the iteration with the procedures above for 3x3 matrices
-
+   theta[0] = theta[0] + epsilon;
 #else
 // calculation of the iteration with the boost lib (general)
 
@@ -260,7 +272,8 @@ bool IDENT05_BASICLSQ::predict(int k, double yiter, double &epsilon)
 {
 #ifdef _RELSQ_TEST_FIXED_MATDIM_
 // calculation of the iteration with the procedures above for 3x3 matrices
-
+//   std::cout << "  params transmitted " << k <<  " " << yiter << " " << epsilon << "\n";  // debug
+   epsilon = 1.0/((double) k)*(yiter-phi[0]); 
 #else
 // calculation of the iteration with the boost lib (general)
 
@@ -273,7 +286,7 @@ bool IDENT05_BASICLSQ::update()
 {
 #ifdef _RELSQ_TEST_FIXED_MATDIM_
 // calculation of the iteration with the procedures above for 3x3 matrices
-
+   phi[0] = theta[0]; // just to do something, here the significance of phi,theta is unusual
 #else
 // calculation of the iteration with the boost lib (general)
 
@@ -284,32 +297,49 @@ bool IDENT05_BASICLSQ::update()
 
 bool IDENT05_BASICLSQ::getParams() 
 {
-   std::cout<< " Result from statlsq (AR type) params:\n";
+   std::cout<< " Result from basiclsq (AR type) params:\n";
    std::cout<< "\t autoregressive part:\n";
    for (int j=0; j<(na); j++) {
        std::cout<< "a[" << j << "]="<< theta[j] <<", ";
    }
+   std::cout << "\n";
    return 0;
 }
 
 /******************************************************
  * derived-derived class IDENT05_STATLSQ
  *****************************************************/
-/*
- IDENT05_STATLSQ::IDENT05_STATLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, int dnb, double fTs, double fvarian ) : IDENT05_ABSLSQ( ydata, udata, dsize, dna, fTs, fvarian ) // first constructor as derived class: must be present even if the args (np vs na,nb) does not correspond to the derived class
+/**/
+ IDENT05_STATLSQ::IDENT05_STATLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, int dnb, double fTs, double fvarian ) : IDENT05_ABSLSQ( ydata, udata, dsize, dna, fTs, fvarian) , yhat(std::vector<double> (dsize, 0.0)) 
+
+  // first constructor as derived class: must be present even if the args (np vs na,nb) does not correspond to the derived class
 {
   nb=dnb;
-  iter=0;
+  //iter=0;
  // nothing here
   int k;
   for (k=0; k<dsize; k++) {
      y[k]=ydata[k];
      u[k]=udata[k];
+     yhat[k]=0.0;
   }
+  lamb1=1.0;
+  lamb2=1.0;
+  std::cout << "Instance of class type _STATLSQ created with size " << dsize << "\n";
 } //end constructor
 
+//copy constructor
+//
+ IDENT05_STATLSQ :: IDENT05_STATLSQ(const IDENT05_STATLSQ &source) : IDENT05_ABSLSQ(source)
+{
+}  
+// afffectation constructor
+ IDENT05_STATLSQ &IDENT05_STATLSQ :: operator=(const IDENT05_STATLSQ &source) //: IDENT05_ABSLSQ(source) 
+{
+}
+
 //destructor
- IDENT05_STATLSQ:: ~IDENT05_STATLSQ() 
+ IDENT05_STATLSQ:: ~IDENT05_STATLSQ(void) 
 {
 }  
 
@@ -328,7 +358,7 @@ bool IDENT05_STATLSQ::innovation(double &epsilon)
 	return 0;
 }
  
-bool IDENT05_STATLSQ::predict(double yiter, double &epsilon) 
+bool IDENT05_STATLSQ::predict(int k, double yiter, double &epsilon) 
 {
    int flag;
    double ypred;
@@ -395,4 +425,4 @@ bool IDENT05_STATLSQ::getParams()
    return 0;
 }
 
-*/
+/**/

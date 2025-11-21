@@ -1,0 +1,105 @@
+#include <iostream>
+#include <vector>
+
+#define NUMBER_MAX 10
+
+template <class T>  // T=basic type the in array
+class Table
+{
+// Definition of the class template 
+   public:
+      Table(int nc, std::vector<T> initdata);
+      Table(const Table<T> &src);
+      Table<T> &operator=(const Table<T> &src);
+      ~Table();
+      void reset();  // free data
+      Table<T> clone();  // duplicate data
+      T * gettable();
+      void print();
+   private:
+      int ncol;
+      T *m_table;
+};
+
+template <class T>
+Table<T>::Table(int nc, std::vector<T> initdata) :
+	ncol(nc)
+{
+   T item;
+   m_table = new T[NUMBER_MAX];
+   for (int i; i<nc; i++) {
+      m_table[i]=initdata[i];
+   }
+}
+
+template <class T>
+Table<T>::Table(const Table<T> &src) :
+	ncol(src.ncol)
+{
+   m_table = new T[NUMBER_MAX];
+   for (int i; i<src.ncol; i++) {
+      m_table[i]=src.m_table[i];
+   }
+}
+
+template <class T>
+void Table<T>::reset() 
+{
+   free(m_table);
+}
+
+template <class T>
+Table<T> Table<T>::clone() 
+{
+   std::vector<T> tablecpy;
+   for (int i; i<ncol; i++) {
+      tablecpy.push_back(m_table[i]);
+   }
+   Table res(ncol, tablecpy);
+   return res;
+}
+
+template <class T>
+void Table<T>::print()
+{
+   for (int i=0; i<ncol; i++) {
+      std::cout << m_table[i] << ", " << std::endl;
+   }
+}
+
+template <class T>
+T * Table<T>::gettable() {
+   return m_table;
+} 
+
+template <class T>
+Table<T> &Table<T> :: operator=(const Table<T> &src)
+{
+   ncol=src.ncol;
+   m_table = new T[NUMBER_MAX];
+   Table tabcpy = src.clone();
+   swap(m_table, tabcpy.gettable());
+   // automatical dispose of tabcpy
+}
+
+template <class T>
+Table<T>::~Table()
+{
+   reset();
+}
+
+/**
+ * main test program
+ */
+int main() 
+{
+   std::vector<int> initdata;
+   for (int i=0; i<5; i++) {
+      initdata.push_back((int) i);
+   }
+   Table<int> exampleA(5, initdata);
+   exampleA.print();
+
+   return 0;
+}
+

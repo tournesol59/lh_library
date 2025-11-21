@@ -1,0 +1,18 @@
+#include <iostream>
+//#include <chaine>
+#include <string>
+// chaine::operator char const *(void) const
+
+int main(int argc, char *argv[]) {
+/*
+	std::string names[] = {"John","Henry","Catherine"};
+	std::string name = {names};
+	std::string n1 = {"John",2};
+//Jostring n2 = {5,’S’};//SSSSS
+*/
+	std::string a ;
+        a = "Hello";
+        std::string b = {"World"};
+        a=b;
+return 0;
+}
