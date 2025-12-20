@@ -1,5 +1,12 @@
 /* Global Scope: Parameter Estimation, ML
- * Scope:
+ * Scope: !!! This is ONLY a version with propositions of 
+ *  !!!       modifications, in part. SolveNumRangesSys_ref1
+ *  !!!       and it has been not compiled nor tested
+ *  !!!
+ *  ++ stubbed imports of file "TheCode0" instead of "TheCode(i)"and print to output of B_l1
+ *     
+ *  -- also commented call InverseRHSLinearSys_ref1() in SolveNumRangesys_ref1()
+ *
  * Solve a second-order linear (for the moment) equation
  * coefficients could be a polynom up to degree two.
  * The collocation method (with Chebyshev interpolation)
@@ -8,12 +15,16 @@
  *
  * LIEBHERR TOULOUSE
  *******************************************************/
+
 #include "../include/ident05_coll.hpp"
 
 #ifndef __TEST_COLL_ONLY__
 #define __TEST_COLL_ONLY__
 #endif
-
+Index repeat_predict;
+Index num_ranges;
+Index num_points; 
+Number boundry[2];
 //using namespace std;
 using namespace lhlib;
 
@@ -23,7 +34,7 @@ using namespace lhlib;
 //#define P2_OM (ident05_nlp::get_p2_om)
 
 // constructor
-IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * CodeNameInp )
+IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * CodeNameInp, const char *SpecNameInp)
 {
 /*eqn Problem type: */
 //  type_eqn=typode;
@@ -34,9 +45,10 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
 
 /* Input File Name */
   lenFileNameInp = 8;  // do not change this value
- // strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
+  strncpy(strFileNameInp, FileNameInp, lenFileNameInp);   // works on MInGW not on Linux
  // std::cout << "Have input(1) file name: " << strFileNameInp << "\n";
- // strncpy(strCodeNameInp, CodeNameInp, lenFileNameInp);   // works on MInGW not on Linux
+  strncpy(strCodeNameInp, CodeNameInp, lenFileNameInp);   // works on MInGW not on Linux
+  strncpy(strSpecNameInp, SpecNameInp, lenFileNameInp);
  // std::cout << "Have input(2) file name: " << strCodeNameInp << "\n";
 
 /*  t0=(Number)malloc(7*sizeof(Number)); */
@@ -50,11 +62,13 @@ IDENT05_COLL::IDENT05_COLL(Index ord, const char * FileNameInp, const char * Cod
 
   t7[0]=0.0; t7[1]=-7.0; t7[2]=0.0; t7[3]=56.0; t7[4]=0.0; t7[5]=-112.0; t7[6]=0.0; t7[7]=64.0;
   order=ord; //6
+  Miter=0;  // iterative index, when the collocation will be operated several times after completion of each subinterval
   tinit=0.0;
   tend=2.0;
   num_ranges=2;
+  
   num_points=20;
-  num_rows=num_ranges*num_points;
+  num_rows=num_ranges*10;
   num_total_coeffs=(order+1)*num_ranges;
   predictparams[0]=1.0;
   predictparams[1]=2.0;
@@ -80,24 +94,35 @@ bool IDENT05_COLL::read_parse_code() {
  * 3: double:boundry[0], boundry[1] as bvp or ivp
  * 5: int: num_ranges for calc, num_points for output
  * 6: double:prediction[0] and prediction[1] (amplitude and period of sinusoide)
+ * 7-10: double: reload the spectral coeffs of a  previous calculation
  * */
    std::ifstream lh_code;
-   lh_code.open("TheCode", std::ifstream::in);
+  //lh_code.open("TheCode", std::ifstream::in);
+   lh_code.open(strCodeNameInp, std::ifstream::in);
    std::string line;
    std::getline(lh_code, line);
    std::stringstream ss(line);
    ss >> maxrow;
    std::cout << "have " << maxrow << " Code Parameters\n";
    row=1;
-   std::div_t dv{}; dv.quot = row;
-   while ( (std::getline(lh_code, line)) && (row<(4*maxrow)) ) {
-      std::stringstream ss(line);
-      col=0;
-      dv.quot=row;
-      dv = std::div(dv.quot, 2);
-      std::vector<std::array<char, 8>> listchar;   //stackoverflow
-
-      if (dv.rem) {     // odd rows: typ and name of params
+//   std::div_t dv{}; dv.quot = row;
+//   while ( (std::getline(lh_code, line)) && (row<(4*maxrow)) ) {
+//      std::stringstream ss(line);
+//      col=0;
+//      dv.quot=row;
+//      dv = std::div(dv.quot, 2);
+//      std::vector<std::array<char, 8> > listchar;   //stackoverflow
+//      if (dv.rem) {     // odd rows: typ and name of params
+    //int quot ;
+    int rem ;
+    while ( (std::getline(lh_code, line)) && (row < (4*maxrow)) ) {
+	std::stringstream ss(line);
+	col=0;
+      //  quot = row / 2;
+        rem = row % 2;
+	std::vector<std::array<char, 8> > listchar; //stackoverflow
+	if (rem) {  // odd rows: typ and name of params
+// dead (old) code
 //        while (ss >> tuple_t[0][col]) col++;  // do not work for const char*
           //std::istringstream input("INT:INIEQN:END");
 
@@ -141,6 +166,10 @@ bool IDENT05_COLL::read_parse_code() {
          if (!strcmp(tuple_t1, "INT:NUMPTS:")) {
            num_ranges = intarray[0][0];
 	   num_points = intarray[0][1];
+	 }	
+         if (!strcmp(tuple_t1, "INT:ENALDC:")) {
+           enableload = intarray[0][0];
+	   numload = intarray[0][1];
 	 }
          std::cout << "valuei1= " << intarray[0][0] << " and valuei2= " << intarray[0][1] << "\n";	 
        }
@@ -164,6 +193,28 @@ bool IDENT05_COLL::read_parse_code() {
 	    predictparams[0] = doublearray[0][0];
             predictparams[1] = doublearray[0][1];
 	 }
+          // FRED: added another parameter[2] for exponential decay, the other predictparams[3] is for phase diff
+         if (!strcmp(tuple_t1, "DOU:PREEXP:")) {
+            predictparams[2] = doublearray[0][0];
+	    predictparams[3] = doublearray[0][1];
+	 }
+
+         if (!strcmp(tuple_t1, "DOU:LDCAL0:")) {
+	    coeffload[0] = doublearray[0][0];
+            coeffload[1] = doublearray[0][1];
+	 }
+         if (!strcmp(tuple_t1, "DOU:LDCAL2:")) {
+	    coeffload[2] = doublearray[0][0];
+            coeffload[3] = doublearray[0][1];
+	 }
+         if (!strcmp(tuple_t1, "DOU:LDCAL4:")) {
+	    coeffload[4] = doublearray[0][0];
+            coeffload[5] = doublearray[0][1];
+	 }
+         if (!strcmp(tuple_t1, "DOU:LDCAL6:")) {
+	    coeffload[6] = doublearray[0][0];
+            coeffload[7] = doublearray[0][1];
+	 }
          std::cout << "valued1= " << doublearray[0][0] << " and valued2= " << doublearray[0][1] << "\n"; 	 
        }//end if INT:DOU
 
@@ -178,12 +229,55 @@ bool IDENT05_COLL::read_parse_code() {
       std::cout << "initial time= " << tinit << " , tend= " << tend << "\n";
       std::cout << "numranges= " << num_ranges << " , num points= " << num_points << "\n";
       std::cout << "sinus prediction amplitude= " << predictparams[0] << "period= " << predictparams[1] << "\n";
-
+      std::cout << "sinus prediction decay= " << predictparams[2] << "spare if needed= " << predictparams[3] << "\n";
 #endif
    lh_code.close();
    return 0;
 }
 
+bool IDENT05_COLL::InverseRHSLinearSys_ref1()
+{
+   double Aexp[16]; // still dims hard-coded
+   double Bvec[4];
+   if (type_rhs==1) {
+      Aexp[0]=1.; Aexp[1]=-3.; Aexp[2]=5.; Aexp[3]=-7.;
+ 
+      Aexp[4]=0.; Aexp[5]=4.; Aexp[6]=-20.; Aexp[7]=56.;
+
+      Aexp[8]=0.; Aexp[9]=0.; Aexp[10]=16.; Aexp[11]=-112.;
+      
+      Aexp[12]=0.; Aexp[13]=0.; Aexp[14]=0.; Aexp[3]=64.;
+      
+      Bvec[0]=-omega_rhs;
+
+      Bvec[1]= omega_rhs*omega_rhs*omega_rhs/6.;
+
+      Bvec[2]= -omega_rhs*omega_rhs*omega_rhs*omega_rhs*omega_rhs/120.;
+
+      Bvec[3]=0.0; // truncated
+   } 
+   int status, n, rhs, lda, ldb, info;
+   int ipiv[9];
+ 
+   n=4;
+   rhs=1;
+   lda=4;
+   ldb=4;
+   info=1;
+ 
+   // call to ../MathFunctions/mySolveLinearLapack.c
+   status=mySolveLinearLapack(n,rhs,Aexp,lda,ipiv,Bvec,ldb,info);
+
+   for (int i=0; i<7; i++) {
+      if (i%2 ==0) {
+        B_l1_rhs[2*i]+=Bvec[i];
+      }
+      else {
+        B_l1_rhs[2*i+1]+=0.; // for sinus
+      }
+   }
+   return status;
+}
 
 bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
 {
@@ -405,7 +499,7 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
   A_l1[5*(order+3)+(order+2)]=1.0;
   A_l1[6*(order+3)+(order+2)]=1.0;	  
   for (j=0; j<=order; j++) {
-       B_l1[j]=0.0;
+       B_l1[j]=B_l1_rhs[j]; //0.0 if no source
    }
    B_l1[order+1]=boundry[0];
    B_l1[order+2]=boundry[1];
@@ -415,7 +509,6 @@ bool IDENT05_COLL::ExpandSeriesLinearSys_ref1()
   A_l1[7*(order+3)+(order+2)]=0.0; 
   A_l1[8*(order+3)+(order+1)]=0.0; 
   A_l1[8*(order+3)+(order+2)]=0.0; 
-
 
 //end matrices for Clapack
 
@@ -500,10 +593,10 @@ bool IDENT05_COLL::SolveSeriesLinearSys_ref1()
  
    // call to ../MathFunctions/mySolveLinearLapack.c
    status=mySolveLinearLapack(n,rhs,A_l1,lda,ipiv,B_l1,ldb,info);
-return 0;
+return status;
 }
 
-bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end, Index k) {
+bool IDENT05_COLL::NumRangesCalcBoundary(Index k) {
   Number t;
         
 	/* REPEAT BOUNDARY FOR NEXT RANGE: this function should be called at init k=0 and after SolveSeriesLinearSys based on boundary_all[2*k,2*k+1] */
@@ -527,23 +620,29 @@ bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end
    } // if type ovp:
    else {  // Boundary Value Problem
      if (type_predict==COL_TYP_BVP_PRED_TRICKED) {
-       if (k==0) {
+       if (repeat_predict==COL_TYP_BVP_NREPEAT) { // fred: trick here just to reimport
+         boundary_all[2*(k)]=boundry[0];
+         boundary_all[2*(k)+1]=boundry[1];
+       }
+       else { 
+	 if (k==0) {
          boundary_all[0]=boundry[0];
          boundary_all[1]=boundry[1];
-       } 
-       else {
+         } 
+         else {
          t=times_end[k];
-         boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]); // does not work if the period is not captured
-         boundary_all[2*(k)+1]=predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]); // defaut but does not work if the period is not captured
+         boundary_all[2*(k)]=exp(-t*predictparams[2])*predictparams[0]*sin(2*3.14156*t/predictparams[1]+predictparams[3]); // assumed SINUS here, does not work if the period is not captured
+         boundary_all[2*(k)+1]= 0.0 + exp(-t*predictparams[2])*predictparams[0]*2*3.14156/predictparams[1]*cos(2*3.14156*t/predictparams[1]+predictparams[3]); // defaut but does not work if the period is not captured
+         }
        }
      }
      else { //type_predict=1 (COL_TYP_BVP_PRED_NORM , use a function)
         if (repeat_predict==COL_TYP_BVP_NREPEAT) {  // use the predictor function as many times as ranges
           t=times_end[k];
-	  boundary_all[2*(k)]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+	  boundary_all[2*(k)]=exp(-t*predictparams[2])*predictparams[0]*sin(2*3.14156*t/predictparams[1]+predictparams[3]);
 
 	  t=times_end[k+1];
-	  boundary_all[2*(k)+1]=predictparams[0]*sin(2*3.14156*t/predictparams[1]);
+	  boundary_all[2*(k)+1]=exp(-t*predictparams[2])*predictparams[0]*sin(2*3.14156*t/predictparams[1]+predictparams[3]);
 	  std::cout << "PRED NORM and NREPEAT : " << boundary_all[2*(k)] << " " << boundary_all[2*(k)+1] << "\n";
          } 
          else {  // use the predictor function the same manner as the first range, although this is not the philosophy of collocation
@@ -558,43 +657,87 @@ bool IDENT05_COLL::NumRangesCalcBoundary(Number* boundary_all, Number* times_end
 
 bool IDENT05_COLL::SolveNumRangesSys_ref1()
 {
-   Index k, j;
-   Number t, x, times_end[5];
-   Number boundary_all[10]; 
+   Index row, k, j, num_points_data;
+   Number t, x;
+  //Number times_end[5];  //moved on
 // 10 should be set to a variable index in the future as it corresponds to a number of points in a simulation intervall (10) and is time-sampling dependant
-   Number equ_all[12];
+   Number equ_all[18];
+       // read the code file
+  const char strItem1[9]="TheCode1";
+  const char strItem2[9]="TheCode2";
+  const char strItem3[9]="TheCode3"; // spare
 
+  // this below because different num of points in data definition and output caused pbs
+   num_points_data=7;  // - fixed temporary bug (int) num_rows/num_ranges;
 //   equ_all[0]=equ1[0];
 //   equ_all[1]=equ1[1];
 //   equ_all[2]=equ1[2];
-   for (k=0; k<num_ranges; k++) {
+   std::cout << "*********** starting iteration M=" << Miter << "************\n";
+   for (k=0; k<num_ranges+1; k++) {
        // iterate on intervals
        times_end[k]=tinit + k*(tend-tinit)/num_ranges;
    }   
    times_end[num_ranges]=tend;
-   k=0;
-   if (NumRangesCalcBoundary(boundary_all, times_end, k)) {
-      std::cout << "Error Calc Init Boundary\n"; 
-   }
+// fred: moved call to NumRangesCalcBoundary from here
    for (k=0; k<num_ranges; k++) {
 	// import equation coefficients, which are set in the Data TheFile.txt
-       equ_all[3*k+2]=dataarray[k*num_points+0][3];
-       equ_all[3*k+1]=dataarray[k*num_points+1][4];
-       equ_all[3*k]=dataarray[k*num_points+2][5];
+       equ_all[3*k+2]=1.0; //dataarray[k*num_points_data][3];
+       equ_all[3*k+1]=0.1; //dataarray[k*num_points_data][4];
+       equ_all[3*k]=16.0; //dataarray[k*num_points_data][5];
+       std::cout << "VERIF num data per itv: " << num_points_data << " c0: " << equ_all[3*k] << " c1: " << equ_all[3*k+1] << " c2: " << equ_all[3*k+2] << "\n";
 	// correction of equation coefficient, due to reduction of intervall size to -1..1:
        equ_all[3*k]=equ_all[3*k]*(1); 
        equ_all[3*k+1]=equ_all[3*k+1]*(2/(times_end[k+1]-times_end[k]));
        equ_all[3*k+2]=equ_all[3*k+2]*pow(  (2/(times_end[k+1]-times_end[k])), 2);
-#ifdef __TEST_COLL_ONLY__       
-	std::cout << "    check boundary conditions: y0 " <<  boundary_all[2*k] << " and dy0 " <<  boundary_all[2*k+1] << " \n";
-#endif
-       boundry[0]=boundary_all[2*k];
-       boundry[1]=boundary_all[2*k+1];
-
+// in waiting for a better solution => switch case:
+       switch (k) {
+	  case 0:
+		  strncpy(strCodeNameInp, strItem1, 8);  // same thing
+		  std::cout << "WE read the file 1 " << strCodeNameInp << "\n";
+		  break;
+          case 1:
+		  strncpy(strCodeNameInp, strItem2, 8);  // same thing
+		  std::cout << "WE read the file 2 " << strCodeNameInp << "\n";
+		  break;
+          case 2:		  
+		  strncpy(strCodeNameInp, strItem3, 8);  // same thing
+		  std::cout << "WE read the file 3 " << strCodeNameInp << "\n";	
+		  break;
+       }
+       std::cout << "Start the reading of codes file " << k << " " << strCodeNameInp << "\n";
+       if (Miter ==0) {
+	  // for the first iteration, the guess values from NumRangesCalcBoundary are taken
+          read_parse_code();
+          if (NumRangesCalcBoundary(k)) {
+             std::cout << "Error Calc Init Boundary\n"; 
+          }
+          boundry[0]=boundary_all[2*k];
+          boundry[1]=boundary_all[2*k+1];
+       }
+       else {
+	  // re read the exported data, not needed now but in the future with jacobian.
+          read_parse_specfile();
+          // in the file contening the main() method a call to UpdateBoundaryIterative(Index Miter) has been performed
+          boundry[0]=boundary_all[2*k];
+          boundry[1]=boundary_all[2*k+1];	  
+       }
        equ1[0]=equ_all[3*k];
        equ1[1]=equ_all[3*k+1];
        equ1[2]=equ_all[3*k+2];
-      
+
+        /// new: calc RHS vector B_l1_rhs for sinus
+        //InverseRHSLinearSys_ref1();
+        /// OR : load RHS spectral coeff in B_l1_rhs
+	int enable_ldrhs=0;
+	if (enable_ldrhs==1) {
+	   for (j=0; j<=order; j++) {
+              B_l1_rhs[j]=coeffload[j]; //0.0 if no source
+           }
+	}	   
+#ifdef __TEST_COLL_ONLY__       
+	std::cout << "    check boundary all conditions: y0 " <<  boundary_all[2*k] << " and dy0 " <<  boundary_all[2*k+1] << " \n";
+	std::cout << " check RHS function projection coeff: b0: " << B_l1_rhs[0] << " b1: " << B_l1_rhs[1] << " b2: " << B_l1_rhs[2] << " b3: " << B_l1_rhs[3] << " b4: " <<  B_l1_rhs[4] << " b5: " << B_l1_rhs[5] << " b6: " <<  B_l1_rhs[6] <<" \n";
+#endif
         // call to form the system
        ExpandSeriesLinearSys_ref1();
 	// now the system is set in matrices A_l1, B_l1
@@ -607,7 +750,7 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 
 #ifdef __TEST_COLL_ONLY__
         std::cout << " ****** Solution of Linear System: " << k << " c0=" << equ1[0] << " c1=" << equ1[1] << " c2=" << equ1[2] << ": ******** \n";
-	std::cout << "    with boundary conditions: y0 " <<  boundry[0] << " and dy0 " <<  boundry[1] << " \n";
+	std::cout << " on t=" << times_end[k] << ", " << times_end[k+1] << " with boundary conditions: y0 " <<  boundry[0] << " and dy0 " <<  boundry[1] << " \n";
         for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
           // display the result
            std::cout << coeffarray[(order+1)*k+j] << '\n';
@@ -616,38 +759,42 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 
 	//evaluate the result of the solution in solarray vector
        for (j=0; j<=num_points; j++) {
-           x=-1+2.0/float(num_points)*j;
+           x=-1+2.0/float(num_points-1.)*j;
            t=(times_end[k+1]-times_end[k])/2.0*x + (times_end[k+1]+times_end[k])/2.0;  // is there an error?
 	   solarray[num_points*k+j][0]=t;
-	   solarray[num_points*k+j][1]=evalCollocation(x, B_l1); // x, not t
+	   solarray[num_points*k+j][1]=evalCollocation(k, x, B_l1); // x, not t
+      	   solarray[num_points*k+j][2]=evalDerivCollocation(k, x, B_l1); // x, not t
+     
        }
 
-      // anticipate next iteration and calc correspondant boundaries            
-      if (NumRangesCalcBoundary(boundary_all, times_end, k+1)) {
-          std::cout << "Error iteration of Calc Init Boundary Condition\n";
-      }
-
+      // fred: suppressed :anticipate next iteration and calc correspondant boundaries            
    } //end for k
    
-   // SAVE ON DISK the solution: coefficients and time values
-   // SHALL BE REPLACED BY ANOTHER DEDICATED CLASS METHOD
-  int row;
-  std::ofstream lh_spec;
-  lh_spec.open("TheSpec", std::ofstream::out);  // test w/o variable Name
-  row=0;
-  lh_spec << num_ranges << "\n";
-  while (k<num_ranges) {
-        for (j=0;j<(order+1);j++) {   // 7 is equal to order plus 1
-          // display the result
-           lh_spec << coeffarray[(order+1)*k+j] << "\n";
-         }
-   }
-  lh_spec.close();
+   // SAVE ON DISK the solution: coefficients and time values 
+   // important note: here the derivatives on two sides ofthe boundary are eval
+  if (subSaveRangesRes() != 1) { 
+     exit(PEXIT_ERR_EXPORTSPEC);  
+  }
 
   std::ofstream lh_test;
-  lh_test.open("TheTest", std::ofstream::out);  // test w/o variable Name
+  char strTestNameOut[14];
+  switch (Miter) {
+      case 0:
+	  strncpy(strTestNameOut, "TheTest0", 8);  // manually
+	  break;
+        
+      case 1:
+	  strncpy(strTestNameOut, "TheTest1", 8);  // manually
+	  break;
+       
+      case 2:
+	  strncpy(strTestNameOut, "TheTest2", 8);  // manually
+	  break;
+  } 
+
+  lh_test.open(strTestNameOut, std::ofstream::out);  // test w/o variable Name
   row=0;
-  while (row<num_ranges*num_points) {
+  while (row < num_ranges*num_points) {
 //  while (lh_test.good()) {
       lh_test << solarray[row][0] << "\t";
       lh_test << solarray[row][1] << "\n";
@@ -658,7 +805,7 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
 #ifdef __TEST_COLL_ONLY__  
   std::cout << " *************** This is the solution solved by collocation ****************** \n"; 
   row=0;
-  while (row<num_ranges*num_points) {
+  while (row < num_ranges*num_points) {
       std::cout << "tf= " << solarray[row][0] << " ";
       std::cout << "ytf= " << solarray[row][1] << "\n";
       row++;
@@ -668,7 +815,252 @@ bool IDENT05_COLL::SolveNumRangesSys_ref1()
   return 0;
 }
 
-Number IDENT05_COLL::evalCollocation(Number t, Number * coeff) 
+bool IDENT05_COLL::UpdateBoundaryIterative()
+{
+  Number LAMBDA1 = 0.7/predictparams[1];
+  Number LAMBDA2 = 0.6/predictparams[1];
+  Number LAMBDA_PHI = 0.15/1.57;
+  Number COLL_MIN_DPHI = 0.25;
+  Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
+  Number COLL_MAX_MISMATCH = 1.5*COLL_MIN_DERIVATIVE;
+  Index k, h, h0, h1, h2, h3, h4; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
+  //Number kcoeffs[8];
+  Number x_a, x_b, y_b, dy_b, dyb_next, pred_dy_a, pred_dy_b, 
+	 y_a, dy_a, x_c, y_c, dy_c, dyc_next, diff_dy_a, 
+	 diff_dy_b, new_y_a, new_y_b, new_y_c, diff_dphi; // 
+  Number yh, dyh, yh0, dyh0, yh1, dyh1, yh2, dyh2, yh3, dyh3, yh4, dyh4, yM, dyM; 
+  Number dphi0, dphi1, dphi2;
+  // 
+  std::cout << "DEBUG, predictparams " << predictparams[0] << " " << predictparams[1] << " " << predictparams[2] << " " << predictparams[3] << "\n";
+  //
+  Miter++; // increase of global index of iteration
+  for (k=0; k < num_ranges-1; k++) {  // we only evaluate k-1
+     // normally import TheCode[k] here, but for a two points config we can test w/o it
+     y_a = boundary_all[2*k];
+     y_b = boundary_all[2*k+1];
+//      y_c = boundary_all[2*k+2];
+     dy_a = boundary_derivall[2*k];
+     dy_b = boundary_derivall[2*k+1];  //REMARK: this convention for interv k
+     dyb_next = boundary_derivall[2*k+2];
+//     dy_c = boundary_derivall[2*k+2];
+     x_a = times_end[k];
+     x_b = times_end[k+1];
+//     x_c = times_end[k+1];    
+//     we neglect the exponential decay effect for the moment 
+     pred_dy_a = 2*3.14156/predictparams[1]*predictparams[0]*sin(2*3.14156*x_a/predictparams[1]+predictparams[3]);
+     pred_dy_b = 2*3.14156/predictparams[1]*predictparams[0]*sin(2*3.14156*x_b/predictparams[1]+predictparams[3]);
+     //std::cout << "DEBUG predicted param3 " << predictparams[3] << " ypa " << pred_dy_a << " ypb " << pred_dy_b << "\n";
+     diff_dy_a = 0; // unused
+     diff_dy_b = - dy_b + dyb_next; // same REMARK
+     if (k > 0) {
+        new_y_a = boundary_all[2*(k-1)+1];  // corresp to new_y_b[k-1], and do nothing if if k==0
+     } 
+     else {
+        new_y_a = boundary_all[0]; // ok to recopy inverted after
+     }
+     if (fabs(pred_dy_b) > COLL_MIN_DERIVATIVE ) {
+	     // fred: here add a modification by authorizing the modification
+	     // of y_c ! , always based on slopes difference at x_b and only for
+	     // a derivative threshold of dy_b !
+	     // fred (15 oct 25): I have changed the sign from minus to plus
+        new_y_b = (fabs(diff_dy_b) > COLL_MAX_MISMATCH)? y_b + LAMBDA1*diff_dy_b : y_b;
+	//new_y_c = (fabs(diff_dy_b) > COLL_MAX_MISMATCH)? y_c + LAMBDA2*diff_dy_b : y_c;
+     }
+     else {
+       // preview another algorithm
+       new_y_b = boundary_all[2*k+1];
+     }
+     if (Miter > 0) {
+	std::cout << "Boundary update, k=" << k << " x_a=" << x_a << ", x_b=" << x_b << "\n";
+	std::cout << "Read calc value: ya " << y_a << " yb " << y_b << "\n";
+        std::cout << "Predict derivative: dypa " << pred_dy_a << ", dypb " << pred_dy_b << ", min threshd: " << COLL_MIN_DERIVATIVE << "\n";
+	std::cout << "Read derivative: dyb " << dy_b << ", dybnext " << boundary_derivall[2*(k+1)] << "\n";
+        std::cout << "Deviation derivative: diffdyb " << diff_dy_b << ", threshd: " << COLL_MAX_MISMATCH << ", factors: lambdab=" << LAMBDA1 << ", lambdac=" << LAMBDA2 << "\n";
+        std::cout << "new bound value: nya " << new_y_a << " nyb " << new_y_b << "\n";
+
+     }     
+     // write the result in array, but this must be written also on file
+     boundary_all[2*k]=new_y_a;
+     boundary_all[2*k+1]=new_y_b;
+  }
+
+// now look for the phase increase
+// first thing is to populate the extremum_alllocus, _allvalues tables
+  for (k=0; k < num_ranges-1; k++) {
+//     if (((k%4 == 0) || (k%4 == 1)) && (boundary_all[2*k] > 0.5*predictparams[0])) { // part decreasing
+     if (k%4 == 0) {  // cosinus-like part, decreasing
+        h=k*num_points;
+	yM=solarray[h][1]; // value
+	yh=solarray[h+1][1];
+	while ((h < (k+1)*num_points) && (fabs(yM) < fabs(yh))) { // look up for a maximum of y
+          h++;
+	  yM=yh;
+          yh=solarray[h+1][1];
+	}  
+	h0=h;
+	extremum_alllocus[2*k]=h;
+	extremum_allval[2*k]=fabs(yM);
+	extremum_alldphi[2*k]=0.;
+        // reinit
+	h=k*num_points;
+	dyM=solarray[h][2]; // derivative
+	dyh=solarray[h+1][2];
+	while ((h < (k+1)*num_points) && ((fabs(dyM) < fabs(dyh)) || (fabs(dyM) < 2.0*COLL_MIN_DERIVATIVE) )) { // look up for a minimum of y'
+          h++;
+	  dyM=dyh;
+	  dyh=solarray[h+1][2];
+	  yh=solarray[h+1][1];
+	}
+	h1=h;
+	if (h1==h0) { // security against NaN values
+	     h1=h0+1;
+       	}
+	
+	extremum_alllocus[2*k+1]=h;
+	extremum_allval[2*k+1]=dyM;
+	if (yh > 0) {
+	// formula, correct version is line one below: (with scale of phase)
+           dphi1 = atan( fabs(dyh)/fabs(yh)/(6.283/predictparams[1]));
+	   extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+	//dphi1 = asin(fabs(dyM)/yM/(6.283/predictparams[1]));
+	//extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+	//extremum_alldphi[2*k+1]=(asin(fabs(dyM)/yM/(6.283/predictparams[1])))*predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+        //extremum_alldphi[2*k+1]=asin(fabs(dyM)/(fabs(yM)*6.28/predictparams[1])) ;
+
+	}
+	else { // yh<0
+	// formula, correct version is line one below: (with scale of phase)
+           dphi1 = 1.5707+atan( fabs(yh)*(6.283/predictparams[1])/fabs(dyh));
+	   extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+
+	}
+	std::cout << "DEBUG JUST AFTER phi" << 2*k+1 << " " << dphi1 << " calc: yh1=" << yh << " dyh" << dyh  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
+
+     }
+//    else if (((k%4 == 0) || (k%4 ==1)) && (fabs(boundary_all[2*k]) < 0.2*fabs(predictparams[0]) )) { // sinus increasing or cosinus decreasing part
+     else if (k%4 == 1) {  // sinus-like part
+        h=num_points*k;
+	dyM=solarray[h][2];
+	dyh=solarray[h+1][2];
+        while ((h < (k+1)*num_points) && ((fabs(dyM) < fabs(dyh)) || (fabs(dyh) < 2.0*COLL_MIN_DERIVATIVE)) ) { // look up y'(max)
+           h++;
+	   dyM=dyh;
+	   dyh=solarray[h+1][2];
+	}
+	h1=h;
+	dyh1=solarray[h1][2];
+	yh1=solarray[h1][1];
+	extremum_alllocus[2*k]=h;
+	extremum_allval[2*k]=dyM;
+	//extremum_alldphi[2*k+1]=asin(fabs(dyM)/yM/(6.283/4./(solarray[h1][0]-solarray[h0][0])) ); // fred: leave here as comment since another formula is used below
+        h=num_points*k;
+	yM=solarray[h][1];
+	yh=solarray[h+1][1];
+	while ((h< (k+1)*num_points) && ( ((fabs(yM) < fabs(yh)) && (yh<0)) || ((fabs(yM) > fabs(yh)) && (yh>0)) )) { // look up for a minimum of yi, FRED: OK!
+          h++;
+	  yM=yh;
+          yh=solarray[h+1][1];
+	}
+	h2=h;
+	dyh2=solarray[h2][2];
+	yh2=solarray[h2][1];
+	
+	extremum_alllocus[2*k+1]=h2;
+	extremum_allval[2*k+1]=fabs(yM);
+	if (dyh2 > 0) {  // corrected here: sign(dyh2) test
+	   // FRED: la formule ci-dessous qui est la meilleure est la premiere TBD
+	   extremum_alldphi[2*k+1]=(3.1415-atan(fabs(dyh2)/fabs(yh2)/(6.28/predictparams[1])))*(6.28/4./(solarray[h2][0]-solarray[h1][0]));
+	   // FRED : essayer en prenant en compte les abcisses pour 'mesurer' la dilatation 
+	  //dphi2 = (3.1415-asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) ));
+	  //extremum_alldphi[2*k+1]=dphi2*(predictparams[1]/4./(solarray[h2][0]-solarray[h1][0]));
+	   // FRED : this might be OK but prefer the following 
+	  //extremum_alldphi[2*k+1]=3.1415-asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) );
+	} 
+	else {
+	   // FRED: la formule ci-dessous qui est la meilleure est la premiere TBD
+	   dphi2 = atan(fabs(dyh2)/fabs(yh2)/(6.28/predictparams[1]));
+	   extremum_alldphi[2*k+1]=dphi2*(6.28/4./(solarray[h2][0]-solarray[h1][0]));
+           //extremum_alldphi[2*k+1]=atan(fabs(dyh2)/fabs(yh2)/(6.28/4./(solarray[h2][0]-solarray[h1][0])));
+	  //dphi2 = asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) );
+	  //extremum_alldphi[2*k+1]=dphi2*(predictparams[1]/4./(solarray[h2][0]-solarray[h1][0]));
+	   //extremum_alldphi[2*k+1]=asin( 0.9*fabs(yh2)*(6.28/predictparams[1])/(fabs(dyM)) );
+	   std::cout << "DEBUG JUST AFTER phi" << 2*k+1 << " " << dphi2 << " calc: yh2=" << yh2 << " dyM" << dyh1  << " t1=" << solarray[h1][0] << " t2=" << solarray[h2][0] << "\n";
+
+	} //endif 1
+     } // endif 2   
+   //    if (((k%4 ==2) && (boundary_all[2*k] < 0.5*predictparams[0])) || ((k%4==0) && (boundary_all[2*k] > 0.5*predictparams[0])) ) { // cosinus increase or sinus increasing
+     if (k%4 == 2) {  // cosinus-like part, increasing
+        h=k*num_points;
+	yM=solarray[h][1]; // value
+	yh=solarray[h+1][1];
+	while ((h < (k+1)*num_points) && (fabs(yM) < fabs(yh))) { // look up for a minimum of y (max(fabs))
+          h++;
+	  yM=yh;
+          yh=solarray[h+1][1];
+	}  
+	h3=h;
+	extremum_alllocus[2*k]=h3;
+	extremum_allval[2*k]=fabs(yM);
+	extremum_alldphi[2*k]=0.;
+        // reinit
+	h=k*num_points;
+	dyM=solarray[h][2]; // derivative
+	dyh=solarray[h+1][2];
+	while ((h < (k+1)*num_points) && (fabs(dyM) < fabs(dyh))) { // look up for a maximum of y'
+          h++;
+	  dyM=dyh;
+	  dyh=solarray[h+1][2];
+	}
+	h4=h;
+	if (h4==h3) { // security against NaN values
+	     h4=h3+1;
+       	}
+	extremum_alllocus[2*k+1]=h4;
+	extremum_allval[2*k+1]=dyM;
+	// formula, correct version is line two below: (difference of phase)
+	// extremum_alldphi[2*k+1]=asin(fabs(dyM)/yM/(6.283/4./(solarray[h4][0]-solarray[h3][0])) );
+	//extremum_alldphi[2*k+1]=asin(fabs(dyM)/(fabs(yM)*6.28/predictparams[1])) *predictparams[1]/4./(solarray[h4][0] - solarray[h3][0]);
+
+        extremum_alldphi[2*k+1]=asin(fabs(dyM)/(fabs(yM)*6.28/predictparams[1])) ;
+
+     } // endif1  
+  }// end for k
+
+  // now re iterate loop over k intervals, this time knowing the max locus
+  
+  for (k=0; k < num_ranges-1; k++) {
+     std::cout << "Phase increase, ph"<< 2*k << "=" << extremum_alldphi[2*k] << ", ph" << 2*k+1 << "=" << extremum_alldphi[2*k+1] << "\n" ;
+  }
+
+  // now the update
+  int enable_new_dphi=0;
+if ( enable_new_dphi == 1 ) {
+  for (k=1; k < num_ranges-1; k++) {
+    if (k%4==1) {
+     y_a=boundary_all[2*k];
+     y_b=boundary_all[2*k];
+      // compare phase increase from previous interval
+       diff_dphi = (extremum_alldphi[2*k+1]-extremum_alldphi[2*k-1]);
+      // - (extremum_alldphi[2*k-1]-extremum_alldphi[2*k-2]); 
+
+       if (fabs(diff_dphi) > COLL_MIN_DPHI ) {
+	 new_y_a = y_a;
+         new_y_b = y_b - LAMBDA_PHI*diff_dphi; // neg. extremum
+     }
+
+     //for debug:
+     std::cout << "Deviation : diff_dphi: " << diff_dphi << ", new_y_b: " << new_y_b << ", factor: " << LAMBDA_PHI << "\n";
+
+     // write the result in array, but this must be written also on file
+     boundary_all[2*k]=new_y_a;
+     boundary_all[2*k+1]=new_y_b;
+    }
+  }
+}
+  return 0;
+}
+
+Number IDENT05_COLL::evalCollocation(Index k, Number t, Number * coeff) 
 {
   int j;
   Number sum;
@@ -715,6 +1107,125 @@ Number IDENT05_COLL::evalChebyshevPolynom(Number t, Index i)
   return sum;
 }
 
+Number IDENT05_COLL::evalDerivCollocation(Index k, Number t, Number * coeff) 
+{
+  int j;
+  Number sum;
+  Number scale;
+  sum=0.0;
+  for (j=0;j<=order;j++) {
+//#ifdef __TEST_COLL_ONLY__ 
+//	std::cout << "coeff[" << j << "]= " << coeff[j] << "\n";
+//#endif	  
+     sum=sum+coeff[j]*evalDerivChebyshevPolynom(t,j);
+  }
+  scale=(2/(times_end[k+1]-times_end[k]));
+  sum=sum*scale;
+  return sum;
+}
+
+Number IDENT05_COLL::evalDerivChebyshevPolynom(Number t, Index i)
+{
+  int j;
+  Number sum;
+  sum=0.0;
+  for (j=1;j<=order;j++) {
+     switch(i) {
+	case 0:
+		sum=sum+0.;
+		break;
+	case 1:
+		sum=sum+j*t1[j]*pow(t,j-1);
+		break;
+	case 2:
+		sum=sum+j*t2[j]*pow(t,j-1);
+		break;
+	case 3:
+		sum=sum+j*t3[j]*pow(t,j-1);
+		break;
+	case 4:
+		sum=sum+j*t4[j]*pow(t,j-1);
+		break;
+	case 5:
+		sum=sum+j*t5[j]*pow(t,j-1);
+		break;
+	case 6:
+		sum=sum+j*t6[j]*pow(t,j-1);
+		break;	
+     }
+  }
+  return sum;
+}
+
+bool IDENT05_COLL::evalExactSolution(Index kitv) { // interval index
+   // pre-required: add an array double exactsolarray[2000][2] into class IDENT05_COLL definition
+   // problem constant definition per interval
+   Number c0, c1, c2, Cst1, omx, om0, omy, rhs_omega, lambda, mu, ti;
+   Index row = kitv*num_points-1;
+
+   c2=dataarray[row][3];   // coefficient y''(t)
+   c1=dataarray[row][4];   // coefficient y'(t)
+   c0=dataarray[row][5];   // coefficient y(t)
+   Cst1=1.0;  // provisoire, fixed parameter (because boundry[1] cannot be used for that predict=rhs)
+   rhs_omega = predictparams[1]; // provisoire
+
+   if (fabs(c2)<1e-6) {
+      std::cout<<"error division by zero in evalExactSolution()\n";
+      exit(PEXIT_ERR_EXACT_NULLDIV);
+   }
+   om0=sqrt(c0/c2);        // proper period
+   omx=c1/(2*c0);          // damped period
+   omy=sqrt( c0 - c1*c1/4.)/c2;  // caracteristic solution period
+   lambda=omy + rhs_omega;
+   mu =omy - rhs_omega;
+
+   Number intermsolarray[2000][7]; // basic functions evaluation, to move in the class definition
+   for (int i=0; i<2000; i++) {
+      ti =tinit + (tend-tinit)/float(num_points)*i;
+
+      intermsolarray[i][0] = exp(-omx*ti);
+      intermsolarray[i][1] = cos(omy*ti);
+      intermsolarray[i][2] = sin(omy*ti);
+      intermsolarray[i][3] = cos(lambda*ti);
+      intermsolarray[i][4] = sin(lambda*ti);
+      intermsolarray[i][5] = cos(mu*ti);
+      intermsolarray[i][6] = sin(mu*ti);
+   }
+
+   // after these base intermediate result are computed you have to solve a basic 2*2 linear system to find theconstants of the homogeneous solution that will be added to the particular solution
+   Number Aivp[4], bivp[2], Civp[2];
+   // homoegeneous-cos(omy)*exp(omx) eval at zero:
+   Aivp[0]=1.0; 
+   // homogeneos-sin
+   Aivp[1]=0.;
+   // homogeneous-cos derivative at zero
+   Aivp[2]=0.;
+   // homogeneous-sin deriv at zero
+   Aivp[3]=omy;
+   // exact solution eval at zero
+   bivp[0]=boundry[0];
+   // exact derivative at zero
+   bivp[1]=predictparams[0]*1.0 - Cst1/omy; // hm...
+   // solving: homogeneous cst to cos:
+
+   Civp[0] = 1/(Aivp[0]*Aivp[3] - Aivp[2]*Aivp[1]) * (Aivp[3]*bivp[0] -Aivp[1]*bivp[1]);
+   Civp[1] = 1/(Aivp[0]*Aivp[3] - Aivp[2]*Aivp[1]) * (-Aivp[2]*bivp[0] + Aivp[0]*bivp[1]);
+
+   // assembling the solution: to be completed..
+   // .. formula: for lamba and mu term only
+   // 
+   // Number Cstlam = lambda*lambda/(omx*omx+lambda*lambda)
+   // Number Cstmu = mu*mu/(omx*omx+mu*mu)  // only if mu is nnz
+
+   // exact[i] =0.
+   // exact[i] += Civp[0]*intermsolarray[i][0]*intermsolarray[1]; // cos
+   // exact[i] + = .. ; //(sin
+   // exact[i] += Cstlam*(intermsolarray[i][3]/lambda + 
+   //         intermsolarray[i][4]*omx/lambda/lambda)  ; // cos lambda
+   // exact[i] += Cstmu
+   return 0;
+}
+
 bool IDENT05_COLL::pass_dataarray_col(Index dim, li_doubles &exports) {
 
    Index row;
@@ -728,6 +1239,7 @@ bool IDENT05_COLL::pass_dataarray_col(Index dim, li_doubles &exports) {
      data.second=solarray[row][1];
      exports.push_back(data);     
    }
-  return 1;
+   return 1;
 }
+
 
