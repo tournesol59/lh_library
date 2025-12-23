@@ -24,6 +24,7 @@ LIBS=-lm
 
 OBJ=../collocation/ident05_collinput.o \
     ../collocation/ident05_coll.o \
+    ../collocation/ident05_colliterative.o \
     ../collocation/ident05_colloutput.o \
     ../main_cpp/ident05_fftdata.o \
     ../MathFunctions/mySolveLinearLapack.o \
@@ -37,6 +38,9 @@ ident05_collinput: ../collocation/ident05_collinput.cpp
 	
 ident05_coll: ../collocation/ident05_coll.cpp
 	${CC} ${CXXFLAGS} -o ident05_coll.o -c $< -I${CINCLUDE} -I${INCLAPACKE}
+
+ident05_colliterative: ../collocation/ident05_colliterative.cpp
+	${CC} ${CXXFLAGS} -o ident05_colliterative.o -c $< -I${CINCLUDE} -I${INCLAPACKE}
 
 ident05_colloutput: ../collocation/ident05_colloutput.cpp
 	${CC} ${CXXFLAGS} -o ident05_colloutput.o -c $< -I${CINCLUDE} -I${INCLAPACKE}
