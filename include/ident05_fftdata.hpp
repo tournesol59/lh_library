@@ -32,7 +32,7 @@ using namespace lhlib;
 //using namespace std;
 
 // replaces (old definition): typedef std::list<dpair> li_doubles;
-typedef std::vector<std::pair<double, double>> li_doubles;
+typedef std::vector<std::pair<double, double> > li_doubles;
 //typedef list<Number[6]> li_doubles;
 
 class IDENT05_IODATA {
