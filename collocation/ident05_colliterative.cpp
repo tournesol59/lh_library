@@ -33,8 +33,12 @@ bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
 	 y_a, dy_a, x_c, y_c, dy_c, dyc_next, diff_dy_a, 
 	 diff_dy_b, new_y_a, new_y_b, new_y_c, diff_dphi; // 
   std::cout << "DEBUG, predictparams " << predictparams[0] << " " << predictparams[1] << " " << predictparams[2] << " " << predictparams[3] << "\n";
-  //
-  Miter++; // increase of global index of iteration
+
+  // LOGIC is present here!
+ Miter++; // increase of global index of iteration
+ int enable_new_dyabs=0;
+ if ( enable_new_dyabs == 1 ) {
+
   for (k=0; k < num_ranges-1; k++) {  // we only evaluate k-1
      // normally import TheCode[k] here, but for a two points config we can test w/o it
      y_a = boundary_all[2*k];
@@ -84,7 +88,7 @@ bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
      boundary_all[2*k]=new_y_a;
      boundary_all[2*k+1]=new_y_b;
   }
-
+ }
   return 0;
 }
 
@@ -293,7 +297,7 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
   }
 
   // now the update
-  int enable_new_dphi=0;
+  int enable_new_dphi=1;
 if ( enable_new_dphi == 1 ) {
 	// loop must start at k=1 !
   for (k=1; k < num_ranges-1; k++) {
@@ -310,10 +314,14 @@ if ( enable_new_dphi == 1 ) {
       //
       //   NEW VERSION:
       if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
-	//strategy1: give more amplitude at beginning
-	  diff_dphi = (extremum_alldphi[2*k-1] - 1.5707);
-          new_y_a = y_a - LAMBDA_PHI*diff_dphi;
-	  new_y_b = y_b;
+	//strategy1: give more amplitude at beginning // NO less positive amplitude
+	//  diff_dphi = (extremum_alldphi[2*k-1] - 1.5707);
+	//  if (y_a > 0) {
+        //    new_y_a = y_a - LAMBDA_PHI*diff_dphi;
+	//    new_y_b = y_b;
+ 	  new_y_a = y_a;
+          new_y_b = y_b;
+	  }
      }
      else if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
 	 // to think about: a good idea would be to override predictparams[1] and redefine sub-intervals abcissas
@@ -323,8 +331,10 @@ if ( enable_new_dphi == 1 ) {
       else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
           // strategy1: give more amplitude at end
          diff_dphi = (extremum_alldphi[2*k+1] - 1.5707);
-	 new_y_a = y_a + LAMBDA_PHI*diff_dphi;
-	 new_y_b = y_b - LAMBDA_PHI*diff_dphi;
+	 if (y_b < 0) {
+	   new_y_a = y_a + LAMBDA_PHI*diff_dphi;
+	   new_y_b = y_b - LAMBDA_PHI*diff_dphi;
+	 }
       }
       else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
 	// ne rien faire/do nothing
