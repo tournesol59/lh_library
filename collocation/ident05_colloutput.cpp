@@ -16,8 +16,15 @@ bool IDENT05_COLL::subSaveRangesRes() {
    Number numval1, numval2;
    Number kcoeffs[10];
    Number x;
-   std::ofstream fspec ("TheSpec", std::ofstream::out);
+   char strSpecFileNAME[14];
 
+   if (Miter==0) {
+      strncpy(strSpecFileNAME, "TheSpec0", 8);
+   }
+   else if (Miter==1) {
+      strncpy(strSpecFileNAME, "TheSpec1", 8);
+   }
+   std::ofstream fspec (strSpecFileNAME, std::ofstream::out);
    k=0;
    while (k < num_ranges) {
       fspec << "INT:RNGORD\n";

@@ -20,18 +20,22 @@
 #define __TEST_COLL_ONLY__
 #endif
 
+#ifndef __TEST_COLL_SIMPLEDPHI__
+#define __TEST_COLL_SIMPLEDPHI__
+#endif
+
 bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
 {
   Number LAMBDA1 = 0.7/predictparams[1];
   Number LAMBDA2 = 0.6/predictparams[1];
-  Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
-  Number COLL_MAX_MISMATCH = 1.5*COLL_MIN_DERIVATIVE;
+  Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.16;
+  Number COLL_MAX_MISMATCH = 1.0*COLL_MIN_DERIVATIVE;
 
   Index k; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
   //Number kcoeffs[8];
   Number x_a, x_b, y_b, dy_b, dyb_next, pred_dy_a, pred_dy_b, 
-	 y_a, dy_a, x_c, y_c, dy_c, dyc_next, diff_dy_a, 
-	 diff_dy_b, new_y_a, new_y_b, new_y_c, diff_dphi; // 
+	 y_a, 
+	 diff_dy_b, new_y_a, new_y_b; // 
   std::cout << "DEBUG, predictparams " << predictparams[0] << " " << predictparams[1] << " " << predictparams[2] << " " << predictparams[3] << "\n";
 
   // LOGIC is present here!
@@ -44,7 +48,7 @@ bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
      y_a = boundary_all[2*k];
      y_b = boundary_all[2*k+1];
 
-     dy_a = boundary_derivall[2*k];
+     //dy_a = boundary_derivall[2*k];
      dy_b = boundary_derivall[2*k+1];  //REMARK: this convention for interv k
      dyb_next = boundary_derivall[2*k+2];
 
@@ -55,7 +59,7 @@ bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
      pred_dy_a = 2*3.14156/predictparams[1]*predictparams[0]*sin(2*3.14156*x_a/predictparams[1]+predictparams[3]);
      pred_dy_b = 2*3.14156/predictparams[1]*predictparams[0]*sin(2*3.14156*x_b/predictparams[1]+predictparams[3]);
      //std::cout << "DEBUG predicted param3 " << predictparams[3] << " ypa " << pred_dy_a << " ypb " << pred_dy_b << "\n";
-     diff_dy_a = 0; // unused
+     //diff_dy_a = 0; // unused
      diff_dy_b = - dy_b + dyb_next; // same REMARK
      if (k > 0) {
         new_y_a = boundary_all[2*(k-1)+1];  // corresp to new_y_b[k-1], and do nothing if if k==0
@@ -96,13 +100,15 @@ bool IDENT05_COLL::UpdateBoundaryIterativeSlope()
 bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, double &yabs, double &dyabs, double &dphi)
 {
    Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
-  Index h, h0, h1; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
-  Number yh, dyh, yh0, dyh0, yh1, dyh1, yM, dyM; 
-  Number y_a, y_b; 
-  Number dphi0, dphi1;
+  Index h, h_s, h0, h1, hend; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
+  Number yh, dyh, yh_s, dyh_s, yhend, yM, dyM; 
+  //Number y_a, y_b; 
+  Number dphi1; //dphi0;
 
   // TBD insert 2 while loop
         h=k*num_points;
+	h_s = h;
+	yh_s=solarray[h_s][1];
 	yM=solarray[h][1]; // value
 	yh=solarray[h+1][1];
 	while ((h < (k+1)*num_points) && (fabs(yM) < fabs(yh))) { // look up for a maximum of y
@@ -136,9 +142,9 @@ bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, d
 
 	}
 	else { // yh<0
- 	// formula, correct version is line one below: (with scale of phase)
+ 	// formula, correct version is line one below: (without scale of phase)
            dphi1 = 1.5707+atan( fabs(yh)*(6.283/predictparams[1])/fabs(dyh));
-	   extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+	   //extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
 
 	}
 	std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh1=" << yh << " dyh" << dyh  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
@@ -156,10 +162,10 @@ bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, d
 bool IDENT05_COLL::exploreForExtremumSecEven(int k, int &found1, int &found2, double &yabs, double &dyabs, double &dphi)
 {   
   Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
-  Index h, h0, h1, h2; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
+  Index h, h1, h2; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
   Number yh, dyh, yh1, dyh1, yh2, dyh2, yM, dyM; 
-  Number y_a, y_b; 
-  Number dphi1, dphi2;
+  //Number y_a, y_b; 
+  Number dphi2; //dphi1
 
   // insert while loop
         h=num_points*k;
@@ -186,7 +192,7 @@ bool IDENT05_COLL::exploreForExtremumSecEven(int k, int &found1, int &found2, do
 	dyh2=solarray[h2][2];
 	yh2=solarray[h2][1];
 	
-	if (dyh2 > 0) {  // corrected here: sign(dyh2) test
+	if ((dyh2 > 0) && (yh2 < 0)) {  // corrected here: sign(dyh2) test
 	   // FRED: les formule ci-dessouss
 	    dphi2=(3.1415-atan(fabs(yh2)*(6.28/predictparams[1])/fabs(dyh2)));
 	   // FRED : essayer en prenant en compte les abcisses pour 'mesurer' la dilatation 
@@ -195,15 +201,22 @@ bool IDENT05_COLL::exploreForExtremumSecEven(int k, int &found1, int &found2, do
 	   // FRED : this might be OK but prefer the following 
 	  //extremum_alldphi[2*k+1]=3.1415-asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) );
 	} 
-	else {
+	else if ((dyh2 < 0) && (yh2 < 0)) {
 	   // FRED: la formule ci-dessous qui est la meilleure est la premiere TBD
-	  //ERREUR dphi2 = atan(fabs(dyh2)/fabs(yh2)/(6.28/predictparams[1]));
+	   // ERREUR dphi2 = atan(fabs(dyh2)/fabs(yh2)/(6.28/predictparams[1]));
+	   dphi2 = atan(fabs(yh2)*(6.28/predictparams[1])/fabs(dyh2));
            //extremum_alldphi[2*k+1]=atan(fabs(dyh2)/fabs(yh2)/(6.28/4./(solarray[h2][0]-solarray[h1][0])));
-	  dphi2 = asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) );
+	  // RETURN Nan dphi2 = asin( fabs(yh2)*(6.28/predictparams[1])/( fabs(dyM)) );
 	  //extremum_alldphi[2*k+1]=dphi2*(predictparams[1]/4./(solarray[h2][0]-solarray[h1][0]));
 	   //extremum_alldphi[2*k+1]=asin( 0.9*fabs(yh2)*(6.28/predictparams[1])/(fabs(dyM)) );
 
-	} //endif 1
+	}
+        else if ((dyh2 > 0) && (yh2 >0)) {
+	    std::cout << "logique PAS ENCORE Implementee pour PHI" << "\n";
+	}
+        else {
+	    std::cout << "logique PAS ENCORE Implementee pour PHI" << "\n";
+	}	//endif 1
 	   std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi2 << " calc: yh2=" << yh2 << " dyh2=" << dyh2  << " t1=" << solarray[h1][0] << " t2=" << solarray[h2][0] << "\n";
 
   // result
@@ -217,16 +230,14 @@ bool IDENT05_COLL::exploreForExtremumSecEven(int k, int &found1, int &found2, do
 
 
 bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
-  Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
-  Number LAMBDA_PHI = 0.15/1.57;
-  Number COLL_MIN_DPHI = 0.25;
-  Number COLL_DPHI_EPS = 0.1;
+  Number LAMBDA_PHI = 0.50/1.57;
+  Number COLL_MIN_DPHI = 0.1;
+  Number COLL_DPHI_EPS = 0.025;
   Index found1, found2;
-  Index k, h, h0, h1, h2, h3, h4; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
-  Number yh, dyh, yh0, dyh0, yh1, dyh1, yh2, dyh2, yh3, dyh3, yh4, dyh4, yM, dyM;
+  Index k; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
   Number yabs, dyabs; 
-  Number y_a, y_b, new_y_a, new_y_b, new_y_c, diff_dphi; 
-  Number dphi0, dphi1, dphi2, dphi3;
+  Number y_a, y_b, new_y_a, new_y_b, diff_dphi; 
+  Number dphi1, dphi2, dphi3;
 
   // now look for the phase increase
 // first thing is to populate the extremum_alllocus, _allvalues tables
@@ -239,13 +250,19 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
         exploreForExtremumFirstOdd(k, found1, found2, yabs, dyabs, dphi1);
 	
 	// store result
-	if ((found1>0) && (found2>0)) {
+	if ((found1>=0) && (found2>=0)) {
 	   extremum_alllocus[2*k]=found1;
 	   extremum_allval[2*k]=yabs;
 	   extremum_alldphi[2*k]=0.;
 	   extremum_alllocus[2*k+1]=found2;
 	   extremum_allval[2*k+1]=dyabs;
+#ifdef __TEST_COLL_SIMPLEDPHI__
+	   extremum_alldphi[2*k+1]=dphi1;
+           std::cout << "DEBUG Phase increase, ph"<< 2*k << "=" << extremum_alldphi[2*k] << ", ph" << 2*k+1 << "=" << extremum_alldphi[2*k+1] << "\n" ;
+
+#else
 	   extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[found2][0]-solarray[found1][0]);
+#endif
 	}
 	else {
            std::cout << "No extremum found in exploreForExtremum with k=" << k << "\n";
@@ -255,15 +272,18 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
 //    else if (((k%4 == 0) || (k%4 ==1)) && (fabs(boundary_all[2*k]) < 0.2*fabs(predictparams[0]) )) { // sinus increasing or cosinus decreasing part
      else if (k%4 == 1) {  // sinus-like part
         exploreForExtremumSecEven(k, found1, found2, yabs, dyabs, dphi2);
-        if ((found1>0) && (found2>0)) {
+        if ((found1>=0) && (found2>=0)) {
           extremum_alllocus[2*k]=found1;
 	  extremum_allval[2*k]=dyabs;
 	  extremum_alldphi[2*k]=0.;
 
 	  extremum_alllocus[2*k+1]=found2;
 	  extremum_allval[2*k+1]=yabs;
+#ifdef __TEST_COLL_SIMPLEDPHI__
+	  extremum_alldphi[2*k+1]=dphi2;
+#else
 	  extremum_alldphi[2*k+1]=dphi2 * predictparams[1]/4./(solarray[found2][0]-solarray[found1][0]);
-
+#endif
 	}
 	else {
 		std::cout << "No extremum found in exploreForExtremum with k=" << k << "\n";
@@ -276,13 +296,17 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
         exploreForExtremumFirstOdd(k, found1, found2, yabs, dyabs, dphi3);
 	
 	// store result
-	if ((found1>0) && (found2>0)) {
+	if ((found1>=0) && (found2>=0)) {
 	   extremum_alllocus[2*k]=found1;
 	   extremum_allval[2*k]=yabs;
 	   extremum_alldphi[2*k]=0.;
 	   extremum_alllocus[2*k+1]=found2;
 	   extremum_allval[2*k+1]=dyabs;
+#ifdef __TEST_COLL_SIMPLEDPHI__
+	   extremum_alldphi[2*k+1]=dphi3;
+#else
  	   extremum_alldphi[2*k+1]=dphi3 * predictparams[1]/4./(solarray[found2][0]-solarray[found1][0]);
+#endif
 	}
 	else {
            std::cout << "No extremum found in exploreForExtremum with k=" << k << "\n";
@@ -298,12 +322,43 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
 
   // now the update
   int enable_new_dphi=1;
-if ( enable_new_dphi == 1 ) {
+  int ident_case_dphi=0;
+  if ( enable_new_dphi == 1 ) {
 	// loop must start at k=1 !
-  for (k=1; k < num_ranges-1; k++) {
-    if (k%4==1) {
+   for (k=0; k < num_ranges; k++) {  // for (k=1: < num_ranges-1; k++) {
+    if (k%4 == 0) {
      y_a=boundary_all[2*k];
-     y_b=boundary_all[2*k];
+     y_b=boundary_all[2*k+1];
+     std::cout << "recheck boundary condition before update for k=" << k << ", y_a=" << y_a << " y_b=" << y_b << "\n";
+       if (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI) {
+           //strategy1: give more amplitude at right-end /
+	   ident_case_dphi = 0;
+	   diff_dphi = (extremum_alldphi[2*k+1] - 1.5707);
+	   if (y_a > 0) {
+	      new_y_a = y_a;
+	      new_y_b = y_b + LAMBDA_PHI*diff_dphi;
+	   } else {
+	      new_y_a = y_a;
+	      new_y_b = y_b - LAMBDA_PHI*diff_dphi;
+	   }
+       }
+       else { // dphi < 1.5707
+	   ident_case_dphi = 1;
+	   diff_dphi = (extremum_alldphi[2*k+1] - 1.5707);
+	   if (y_a > 0) {
+	      new_y_a = y_a;
+	      new_y_b = y_b + LAMBDA_PHI*diff_dphi;
+	   } else {
+	      new_y_a = y_a;
+	      new_y_b = y_b - LAMBDA_PHI*diff_dphi;
+	   }
+      
+       }
+    }
+    else if ((k%4 ==1 ) || (k%4 == 2)) {
+     y_a=boundary_all[2*k];
+     y_b=boundary_all[2*k+1];
+     std::cout << "recheck boundary condition before update for k=" << k << ", y_a=" << y_a << " y_b=" << y_b << "\n";
       // OLD VERSION:
       // compare phase increase from previous interval
       // diff_dphi = (extremum_alldphi[2*k+1]-extremum_alldphi[2*k-1]);
@@ -313,50 +368,66 @@ if ( enable_new_dphi == 1 ) {
       //   new_y_b = y_b - LAMBDA_PHI*diff_dphi; // neg. extremum
       //
       //   NEW VERSION:
-      if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
-	//strategy1: give more amplitude at beginning // NO less positive amplitude
+       if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
+	ident_case_dphi = 0;
+        //strategy1: give more amplitude at beginning // NO less positive amplitude
 	//  diff_dphi = (extremum_alldphi[2*k-1] - 1.5707);
 	//  if (y_a > 0) {
         //    new_y_a = y_a - LAMBDA_PHI*diff_dphi;
 	//    new_y_b = y_b;
  	  new_y_a = y_a;
           new_y_b = y_b;
-	  }
-     }
-     else if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
+       }
+       else if ((extremum_alldphi[2*k-1] > 1.5707+COLL_MIN_DPHI) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
+	   ident_case_dphi = 1;
 	 // to think about: a good idea would be to override predictparams[1] and redefine sub-intervals abcissas
-
-
-     }
-      else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
+	   diff_dphi = (extremum_alldphi[2*k+1] - 1.5707);
+	   new_y_a = y_a;
+	   new_y_b = y_b + LAMBDA_PHI*diff_dphi;
+       }
+       else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] > 1.5707+COLL_MIN_DPHI)) {
+	 ident_case_dphi = 2;
           // strategy1: give more amplitude at end
          diff_dphi = (extremum_alldphi[2*k+1] - 1.5707);
 	 if (y_b < 0) {
-	   new_y_a = y_a + LAMBDA_PHI*diff_dphi;
-	   new_y_b = y_b - LAMBDA_PHI*diff_dphi;
+	  // new_y_a = y_a + LAMBDA_PHI*diff_dphi; // we could do this but creates mismatch with prv interval
+	   new_y_a = y_a;
+	   new_y_b = y_b + LAMBDA_PHI*diff_dphi;
 	 }
-      }
-      else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
+        }
+        else if ((extremum_alldphi[2*k-1] < 1.5707+COLL_DPHI_EPS) && (extremum_alldphi[2*k+1] < 1.5707+COLL_DPHI_EPS)) {
+	  ident_case_dphi=3;
 	// ne rien faire/do nothing
-
-      }// endif
-
-            //for debug:
-     std::cout << "Deviation : diff_dphi: " << diff_dphi << ", new_y_b: " << new_y_b << ", factor: " << LAMBDA_PHI << "\n";
+ 	  new_y_a = y_a;
+          new_y_b = y_b;
+        }// endif
+    }//endif k%4==1
+     
+    //for debug:
+     std::cout << "Deviation : diff_dphi: " << diff_dphi << ", case: " << ident_case_dphi << ", new_y_a: " << new_y_a << ", new_y_b: " << new_y_b << ", factor: " << LAMBDA_PHI << "\n";
 
      // write the result in array, but this must be written also on file
      boundary_all[2*k]=new_y_a;
      boundary_all[2*k+1]=new_y_b;
+     
+     //erase lefft-boundary condition with right end from precedent interval:
+     Number new_y_a_mid;
+     if (k>0) {
+       //new_y_a_mid = (boundary_all[2*k]+boundary_all[2*k-1])/2.0;
+       new_y_a_mid = boundary_all[2*k-1];
+
+       boundary_all[2*k-1] = new_y_a_mid;
+       boundary_all[2*k] = new_y_a_mid;
     }
-  }
-}
+   }//endfor
+  }//endif enable
 
 return 0;
 }
 
 
 /********** deprecated **********/
-
+/*
 bool IDENT05_COLL::UpdateBoundaryIterative()
 {
   Number LAMBDA1 = 0.7/predictparams[1];
@@ -601,4 +672,4 @@ if ( enable_new_dphi == 1 ) {
 }
   return 0;
 }
-
+*/
