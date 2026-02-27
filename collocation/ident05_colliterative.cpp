@@ -101,7 +101,7 @@ bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, d
 {
    Number COLL_MIN_DERIVATIVE = predictparams[0]*2*3.14156/predictparams[1]*0.35;
   Index h, h_s, h0, h1, hend; // subinterval no and various indexes: for search (h) and location of extremum of y (h0) and of y' (h1)
-  Number yh, dyh, yh_s, dyh_s, yhend, yM, dyM; 
+  Number yh, dyh, yh_s, dyh_s, yh1, dyh1, yhend, yM, dyM; 
   //Number y_a, y_b; 
   Number dphi1; //dphi0;
 
@@ -109,6 +109,7 @@ bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, d
         h=k*num_points;
 	h_s = h;
 	yh_s=solarray[h_s][1];
+	dyh_s=solarray[h_s][2];
 	yM=solarray[h][1]; // value
 	yh=solarray[h+1][1];
 	while ((h < (k+1)*num_points) && (fabs(yM) < fabs(yh))) { // look up for a maximum of y
@@ -131,23 +132,45 @@ bool IDENT05_COLL::exploreForExtremumFirstOdd(int k, int &found1, int &found2, d
 	if (h1==h0) { // security against NaN values
 	     h1=h0+1;
        	}
-	
-	if (yh > 0) {
+	yh1 = yh;
+	dyh1 = dyh;
+	hend=(k+1)*num_points-1;
+	yhend=solarray[hend][1];
+
+	if (((yh1 > 0) && (yM > 0)) || ((yh1 < 0) && (yM < 0)))  { // eg. phi=k*Pi...(k+1/2)*Pi-eps
+            if ((h0-h_s) <=1) {
 	// formula, correct version is line one below: (with scale of phase)
-           dphi1 = atan( fabs(dyh)/fabs(yh)/(6.283/predictparams[1]));
-	//dphi1 = asin(fabs(dyM)/yM/(6.283/predictparams[1]));
-	//extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
-	//extremum_alldphi[2*k+1]=(asin(fabs(dyM)/yM/(6.283/predictparams[1])))*predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
-        //extremum_alldphi[2*k+1]=asin(fabs(dyM)/(fabs(yM)*6.28/predictparams[1])) ;
-
+               dphi1 = atan( fabs(dyh1)/fabs(yh1)/(6.283/predictparams[1])); // checked
+	       if (h1 < hend) {
+                   dphi1 = dphi1 + atan(fabs(yhend-yh1)*6.283/predictparams[1]/fabs(dyh1)); //TBC
+	       }	       	
+	       std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh1=" << yh1 << " dyh1=" << dyh1  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
+            }
+	    else if ((h0-h_s) > 1) {
+	       dphi1 = 3.1415 - atan( fabs(yh_s)*6.283/predictparams[1]/fabs(dyh_s));
+	       if (h1 < hend) {
+                   dphi1 = dphi1 + atan(fabs(yhend-yh1)*6.283/predictparams[1]/fabs(dyh1)); //TBC
+	       }
+	       	std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh_s=" << yh_s << " dyh_s=" << dyh_s  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
+	    }
 	}
-	else { // yh<0
- 	// formula, correct version is line one below: (without scale of phase)
-           dphi1 = 1.5707+atan( fabs(yh)*(6.283/predictparams[1])/fabs(dyh));
-	   //extremum_alldphi[2*k+1]=dphi1 * predictparams[1]/4./(solarray[h1][0]-solarray[h0][0]);
+	else if (((yh1 < 0) && (yM > 0)) || ((yh1 > 0) && (yM < 0))) { // eg. phi=k*Pi...(k+1/2)*Pi+eps
+            if ((h0-h_s) <=1) {
+               dphi1 = 1.5707+atan( fabs(yh1)*(6.283/predictparams[1])/fabs(dyh1)); //TBC
+	       if (h1 < hend) {
+                   dphi1 = dphi1 + atan(fabs(yhend-yh1)*6.283/predictparams[1]/fabs(dyh1)); //TBC
+	       }		
+	       std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh1=" << yh1 << " dyh1=" << dyh1  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
+	    }
+	    else if ((h0-h_s) > 1) {
+	       dphi1 = 3.1415 - atan( fabs(yh_s)*6.283/predictparams[1]/fabs(dyh_s));
+	       if (h1 < hend) {
+                   dphi1 = dphi1 + atan(fabs(yhend-yh1)*6.283/predictparams[1]/fabs(dyh1)); //TBC
+	       }	
+	       std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh_s=" << yh_s << " dyh_s=" << dyh_s  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
 
+	    }
 	}
-	std::cout << "DEBUG JUST AFTER phi" << k+1 << " " << dphi1 << " calc: yh1=" << yh << " dyh" << dyh  << " t1=" << solarray[h0][0] << " t2=" << solarray[h1][0] << "\n";
 
   // result
   found1 = h0;
@@ -241,7 +264,7 @@ bool IDENT05_COLL::UpdateBoundaryIterativePhase() {
 
   // now look for the phase increase
 // first thing is to populate the extremum_alllocus, _allvalues tables
-  for (k=0; k < num_ranges-1; k++) {
+  for (k=0; k < num_ranges; k++) {
 	  
 //     if (((k%4 == 0) || (k%4 == 1)) && (boundary_all[2*k] > 0.5*predictparams[0])) { // part decreasing
      if (k%4 == 0) {       
