@@ -1,0 +1,25 @@
+#include <iostream>
+#include <vector>
+#include <iterator>
+#include <cstring>
+
+/* declaration of a class, which must be use to call the file open or generation methods from ../recursive_LSQ/  */
+
+class IDENT05_IOGENERATE {
+
+   public:
+           IDENT05_IOGENERATE(const char* sdirName);
+           ~IDENT05_IOGENERATE();
+	   int choiceInterface();
+	   int loadvectors(std::vector<double> &sig, int m);
+	   
+   protected:
+           char dirName[200];
+	   char rawDataName1[20];  // pour commencer un seul fichier
+	   int dsize1;
+	   double varian1;
+           char rawDataName2[20];
+           int dsize2;
+	   double varian2;
+};
+

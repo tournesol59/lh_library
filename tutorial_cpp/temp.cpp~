@@ -1,0 +1,28 @@
+
+void MonContainer :: remove(MonObjet &source)       // Retire un objet correspondant
+{
+   MonObjetList *tmp1, tmp2; 
+   tmp1 = head;
+
+   if (!is_empty(tmp1)) {
+      tmp2=tmp1->next;
+      while (!is_empty(tmp2->next) && (tmp2->handle() != source->handle()) {
+         tmp1=tmp2;  //cherche l'objet
+	 tmp2=tmp2->next;
+      }
+      // l'a t on trouve?
+      if (!is_empty(tmp2)) {
+         tmp1->next = tmp2->next; // il fallait garder un pointeur tmp1 sur l'objet avant pour cette operation
+	 delete tmp2;
+      }
+      else {
+         // rien a faire
+      }
+   }
+   else {  // cas particulier de l'objet en tete de liste
+      head = head-> next;
+      delete tmp1;
+   }
+   return;
+}
+

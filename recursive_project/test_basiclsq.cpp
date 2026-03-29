@@ -1,0 +1,131 @@
+/*
+ * Program that imports (t,u,y) data and perform a model estimation of params
+ * y- a1*y-1 + ... + an*y-n = b1*u + ... + bm*u-m-1 + e
+ * n=na, m=nb
+ * F Peugny LTS
+ *
+ * run this prgm on cli like this: ./test_basiclsq.exe "secondorder_u.dat" "secondorder_y.dat" 500
+ *  or like this: ./test_basiclsq.exe "secondorder2_u.dat" "secondorder2_y.dat" 200
+ */
+#include <math.h>
+#include "decl_iogenerate.hpp"
+#include "decl_basiclsq.hpp"
+#include "decl_optimlsq.hpp"
+#include "../include/ident05_fftdata.hpp"
+//#include "../recursive_LSQ/decl_relsq.hpp";//immport func generate_from_file:
+int generate_more_from_file(std::vector<double> &sig, int &Npty, const char * filename, int n, int m);
+//int generate_from_file(std::vector<double> &sig, int &n, const char * filename);
+
+int main(int argc, char **argv) {
+
+   char inFileU[20];
+   char inFileY[20];
+   int Npty;
+   std::vector<double> u_indata;
+   std::vector<double> y_indata;
+   // unit test of  int inverse_nthree_matrix(std::vector<double> &mat, std::vector<double> &invmat) :
+   std::vector<double> mat1;
+   mat1.push_back(-1.); 
+   mat1.push_back(1.5); 
+   mat1.push_back(0.);
+   mat1.push_back(1.); 
+   mat1.push_back(-1.); 
+   mat1.push_back(-1.);
+   mat1.push_back(0.); 
+   mat1.push_back(1.5); 
+   mat1.push_back(-1.);
+
+   std::vector<double> mat3;
+   for (int i=0; i<9; i++) {
+	   mat3.push_back(0.); // init
+   }
+
+   int flg=multiply_matrix_matrix(mat1, mat1, mat3, 3);
+   for (int i=0; i<9; i++) {
+	   std::cout << mat3.at(i) << ", ";
+   }
+   std::cout << "\n";
+   if (flg!=0) {
+           std::cout << "error multiplication matrix routine\n";
+   }
+   //import data
+   strcpy(inFileU, (const char*) argv[1]);
+   strcpy(inFileY, (const char*) argv[2]);
+   std::cout << inFileU << "\n"; 
+   std::cout << inFileY << "\n";
+   Npty=std::atoi(argv[3]);
+	   // assume fsample=0.1 (not imported)
+   std::cout << "now import out and ctl data vectors of size " << Npty << "\n";
+
+   generate_more_from_file(u_indata, Npty, inFileU, 1,1);  // n=3 (total no columns), m=2 (selected column)
+   std::cout << "u vector imported correctly \n";
+   generate_more_from_file(y_indata, Npty, inFileY, 1,1); //m=3y is-third sigin file
+   std::cout << "y vector imported correctly \n";
+   for (int k=0; k < 12; k++) {
+     std::cout << k << "\t" << u_indata[k] << "\t" << y_indata[k] << "\n";
+   }
+   
+   // instanciates ident_..lsq class, assumes varianz=0.5
+//   IDENT05_BASICLSQ inst_basiclsq(y_indata, u_indata, Npty, 2, 0.1, 0.5 );
+   std::cout << "now create an instance of BASIC LSQ class \n"; 
+   IDENT05_BASICLSQ inst_basiclsq(y_indata, u_indata, Npty, 2, 0.1, 0.5 );
+   
+   std::cout << "instanciated  BASIC LSQ class \n"; 
+     
+   flg = inst_basiclsq.getParams(); 
+
+   /******** test a copy constructor for completeness of test ********/
+   IDENT05_BASICLSQ insttwo_basiclsq(inst_basiclsq);
+   std::cout << "instanciated copy of BASIC LSQ class \n";
+   flg = insttwo_basiclsq.getParams();  
+   /******** test the recursive algorithm ********/
+
+   double epsilon=0.;
+   // loop over samples (recursive) 
+   //int i;
+   std::cout << "iter \t y_in \t \t epsilon \n";
+   for (int i=3; i <Npty; i++) { // 3 because 0,1,2 are used for init
+	std::cout << i <<  " " << y_indata[i] << " " << epsilon << "\n"; 
+        insttwo_basiclsq.predict(i, y_indata[i], epsilon);
+        insttwo_basiclsq.innovation(epsilon);
+        insttwo_basiclsq.update();
+    
+    } 
+  
+   flg = insttwo_basiclsq.getParams(); 
+
+   /******** do the same thing with the "statlsq" derived class ********/
+   /*
+   IDENT05_STATLSQ inst_statlsq(y_indata, u_indata, Npty, 2, 1, 0.1, 0.5);
+   std::cout << "instanciated STAT LSQ class \n"; 
+   // one additional dim-parameter dnb after dna (2, 1, 0.1..) 
+   //loop over samples (recursive least square this time)
+   for (int i=3; i<Npty; i++) {
+//   i=3; 
+      inst_statlsq.predict(i, y_indata[i], epsilon);
+      inst_statlsq.innovation(epsilon);
+      inst_statlsq.update();
+   }
+ 
+   flg = inst_statlsq.getParams();
+   */
+   /******** do the same thing with the "manlsq" derived class ********/
+   // optim solver arguments
+   std::vector<double> dxinit;
+   dxinit.push_back(0.5);
+   dxinit.push_back(0.5);
+   std::vector<double> drhs;
+   drhs.push_back((0.9*1.2/0.17/0.17));
+   drhs.push_back((0.6*1.2/0.17/0.17));
+   std::vector<double> res;
+   res.push_back(0.0);
+   res.push_back(0.0);
+  //      IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian, std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol);
+   IDENT05_MANLSQ inst_manlsq(y_indata, u_indata, Npty, 2, 0.1, 0.5, dxinit, drhs, 2, 1e-3);
+   flg=inst_manlsq.algorithm();
+   std::cout << "instanciated MAN LSQ class \n"; 
+   
+   // program terminates correctly, vector ressources free-ed automaatically
+   std::cout << "Instances of classes *LSQ created correctly, now terminates \n";
+   return 0;
+}

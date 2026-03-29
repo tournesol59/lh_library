@@ -1,0 +1,6 @@
+Pour ce qui est de get, la philosophie de C++ c'est de laisser l'utilisateur libre, en particulier libre de se tirer dessus, si tu utilises un std::unique_ptr et que tu fais un delete p.get(); alors c'est que tu cherches les ennuies. Le choix de cette fonction get est surement du à ce que tu exprimes ensuite : des bibliothèques qui utilisent des pointeurs là où des références iraient (pour une raison X ou Y, c'est pas la question).
+
+
+Tu as complètement occulté l'exemple que j'ai écrit où l'utilisation de std::unique_ptr (ou boost::scoped_ptr ou équivalent) est quasi-indispensable.
+
+J'ai l'impression que la plupart de tes réticences sont liées à la move-semantic, mais l'utilisation de la move-semantic est loin d'être indispensable à beaucoup de code (du moins pour l'utilisateur, ce que fait l'implémentation des éléments utilisés c'est autre chose), et ne pas l'utiliser ce n'est pas s'interdire std::unique_ptr.

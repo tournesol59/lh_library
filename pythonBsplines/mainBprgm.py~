@@ -1,0 +1,11 @@
+#cp Frederic Peugny, LTS
+import packcolsystwo as colsystwo
+
+NSUB=1
+NX=4
+X=[]
+ALEFT=-1.0
+ARIGHT=1.0
+PARAM=[NX, ALEFT, ARIGHT, 'norm', NSUB]
+colpts=colsystwo.ColsysBPoints(PARAM,X)
+
