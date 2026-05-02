@@ -117,21 +117,45 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
        Number lamb2;
 }; // end class IDENT05_STATLSQ
 
-//class IDENT05_STATLSQ : public IDENT05_BASICLSQ {
+////////////////
+// class IDENT05_OPTLSQ 
+ class IDENT05_OPTLSQ {
+      public:
+   IDENT05_OPTLSQ(std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol);
+   IDENT05_OPTLSQ(const IDENT05_OPTLSQ &source);
+   IDENT05_OPTLSQ &operator=(const IDENT05_OPTLSQ &source);
+   ~IDENT05_OPTLSQ(void);
+
+   bool fres(std::vector<double> xd, std::vector<double> &res);
+   bool Jac(std::vector<double> xd, std::vector<double> &jac);
+   bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
+
+      protected:
+   std::vector<double> theta;
+   std::vector<double> xd;
+   std::vector<double> jacobian;
+   std::vector<double> xinit;
+   std::vector<double> rhs;
+   int dim;
+   double tol;
+   int Itermax;
+   int iter;
+};
+
+//class IDENT05_MANLSQ : public IDENT05_BASICLSQ {
  class IDENT05_MANLSQ : public IDENT05_ABSLSQ, public IDENT05_OPTLSQ {
          public:
-     IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian );
+     IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian, std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol);
      IDENT05_MANLSQ(const IDENT05_MANLSQ &source);
      IDENT05_MANLSQ &operator=(const IDENT05_MANLSQ &source);        
     ~IDENT05_MANLSQ(void);
 
      bool algorithm();
-    /* inherited
-     bool fres(std::vector<double> xd, double &res);
+    // inherited
+     bool fres(std::vector<double> xd, std::vector<double> &res);
      bool Jac(std::vector<double> xd, std::vector<double> &jac);
-   bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
-   bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
-   */
+     bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
+   
 	 protected:
 
        std::vector<double> y;
@@ -154,4 +178,49 @@ int multiply_crossprod(std::vector<double> vec, std::vector<double> row, std::ve
        int iter;
  };
 
+//////////////////////
+/// 2nd branch of heritage: Class for computing Auto Correlation Coeff-based methods (Yule Walker)
+   class IDENT05_ACFLSQ : public IDENT05_ABSLSQ {
+         public:
+    IDENT05_ACFLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dnp, double fTs, double fvarian, int dnlag);
+     IDENT05_ACFLSQ(const IDENT05_ACFLSQ &source);
+     IDENT05_ACFLSQ &operator=(const IDENT05_ACFLSQ &source);       
+    ~IDENT05_ACFLSQ(void);
+
+    bool sumacf(); // computes the auto correlation lagged coefficients from 0 (norm) to nlag
+
+	 protected:
+       std::vector<double> y;
+       std::vector<double> u;
+       Index size;
+       Index np;
+       Number Ts;
+       Number varian;
+       Index nlag;
+       std::vector<double> rxx_acf;
+
+}; // end class IDENT05_ACFLSQ
+
+   class IDENT05_YWLSQ : public IDENT05_ACFLSQ {
+         public:
+    IDENT05_YWLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dnp, double fTs, double fvarian, int dnlag);
+     IDENT05_YWLSQ(const IDENT05_YWLSQ &source);
+     IDENT05_YWLSQ &operator=(const IDENT05_YWLSQ &source);       
+    ~IDENT05_YWLSQ(void);
+    
+    bool sumacf(); // computes the auto correlation lagged coefficients from 0 (norm) to nlag
+      bool expandYuleW();
+
+	 protected:
+       std::vector<double> y;
+       std::vector<double> u;
+       Index size;
+       Index np;
+       Number Ts;
+       Number varian;
+       Index nlag;
+       std::vector<double> rxx_acf;
+       std::vector<double> matrixYw;
+       std::vector<double> rhsYw;
+}; 
 /**/

@@ -57,3 +57,41 @@
       predictparams[1]=doublearray[0][1];      
    }
    row++;col=0;
+
+
+   /* read_parse_file() notdeadbut moved to another file */
+
+bool IDENT05_COLL::read_parse_file() 
+{
+   Index row,col;
+
+// Open the input file, which is a text file with 6 columns
+  std::ifstream lh_file;
+  lh_file.open("TheFile", std::ifstream::in);  // test w/o variable Name
+  
+  row=0;
+  while ((!lh_file.eof()) && (row<41)) {
+//  while (lh_file.good()) {
+      std::string line; 
+      std::getline(lh_file, line);    
+    
+      std::stringstream ss(line);
+      col = 0;
+      while(ss >> dataarray[row][col]) col++;
+#ifdef __TEST_COLL_ONLY__
+      std::cout << "tf= "  << dataarray[row][0] << " ";
+      std::cout << "utf= " << dataarray[row][1] << " ";
+      std::cout << "ytf= " << dataarray[row][2] << " ";
+      std::cout << "c2f= " << dataarray[row][3] << " ";
+      std::cout << "c1f= " << dataarray[row][4] << " ";
+      std::cout << "c0f= " << dataarray[row][5] << "\n";
+#endif
+      row++;
+  }
+   num_rows=row;
+   lh_file.close();
+
+   return 0;
+}
+
+

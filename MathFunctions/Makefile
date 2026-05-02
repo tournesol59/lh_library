@@ -6,12 +6,15 @@ CANSIFLAGS= -Wall
 
 LOADER=/c/MinGW/bin/mingw32-g++
 LOADOPTS='-O3'
+HOME=/home/frede/lh_library
 #library downloaded from netlib.org: one must link ALL of them
-INCLAPACKE=/home/utilisateur/lapack-3.8.0/LAPACKE/include
+INCLAPACKE=${HOME}/lapack_inst/include
+#library downloaded from netlib.org: one must link ALL of them
+INCLAPACKE=${HOME}/lapack_inst/LAPACKE/include
 #TMGLIB=/home/utilisateur/lapack_inst/libtmglib.a
-LAPACKLIB=/home/utilisateur/lapack_inst/liblapack.a
-BLASLIB=/home/utilisateur/lapack_inst/libblas.a
-LAPACKELIB=/home/utilisateur/lapack_inst/liblapacke.a
+LAPACKLIB=${HOME}/lapack_inst/liblapack.a
+BLASLIB=${HOME}/lapack_inst/libblas.a
+LAPACKELIB=${HOME}/lapack_inst/liblapacke.a
 
 #library installed on linux system:
 #INCLAPACKE=/home/frederic/lapack-3.8.0/LAPACKE/include
@@ -26,13 +29,13 @@ OBJ=math_example.o \
   mySolveLinearLapack.o
 
 math_example: math_example.c
-	${CANSI} ${CANSIFLAGS} -o math_example.o -c $<
+	${CANSI} ${CANSIFLAGS} -o math_example.o -c $< -I${INCLAPACKE}
 
 mySolveLinearLapack: mySolveLinearLapack.c
 	${CANSI} ${CANSIFLAGS} -o mySolveLinearLapack.o -c $< -I${INCLAPACKE}
 
 main: ${OBJ}
-	${CANSI} ${CANSIFLAGS} -o math_example ${OBJ} ${BLASLIB} ${LAPACKELIB} ${LAPACKLIB} -lgfortran ${LIBS}
+	${CANSI} ${CANSIFLAGS} -o math_example  -I${INCLAPACKE} ${OBJ} ${BLASLIB} ${LAPACKELIB} ${LAPACKLIB} -lgfortran ${LIBS}
 #	${CC} ${CXXFLAGS} -o math_example ${OBJ}  ${LAPACKELIB} ${LAPACKLIB} ${BLASLIB} ${TMGLIB} -lgfortran ${LIBS}
 clean:
 	rm -rf mySolveLinearLapack.o math_example 

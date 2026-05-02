@@ -31,35 +31,38 @@ using namespace lhlib;
 
 //using namespace std;
 
-typedef std::list<dpair> li_doubles;
-//typedef list<Number[6]> li_6doubles;
+// replaces (old definition): typedef std::list<dpair> li_doubles;
+typedef std::vector<std::pair<double, double> > li_doubles;
+//typedef list<Number[6]> li_doubles;
 
 class IDENT05_IODATA {
 
 	public:
-// constructor
-  IDENT05_IODATA(Index size, Number fTs, const char* giveFileName) ;
+// constructor, FRED 23/11/23: proposition of limiting num of instances of this class to 4 : TBD in the future  
+//   static IDENT05_IODATA getInstance(Index size, Number fTs, const char* giveFileName);
+   IDENT05_IODATA(Index size, Number fTs, const char* giveFileName) ;
+   IDENT05_IODATA(const IDENT05_IODATA & idsrc);
+   IDENT05_IODATA &operator=(const IDENT05_IODATA & idsrc); 
+   ~IDENT05_IODATA();
 
-  ~IDENT05_IODATA();
-
-  Index sizefft;
-  Number samplefft;
-  Number Ts;
-  
-  Index  sizeevalsol; // length of following table
-    
-   char FileName[14]; // name of the file for export (exportToDisk)
-
-    	// vector imported from y text file
+   // vector imported from y text file
 	// previewed for FFT externally performed whose output file format
 	// is in a one-dimensional vector [x,y]
    bool read_extern_output(Index dim, li_doubles &li_reals);
 
-	// for solutions of collocation or ident algorithms to export
+   // for solutions of collocation or ident algorithms to export
 	// on "FileName" (arg of instantiation) file (e.g. ".bat")
    bool exportToDisk(li_doubles &li_reals);
 
 	private:
+   Index sizefft;
+   Number samplefft;
+
+   Index  sizeevalsol; // length of following table
+   Number Ts;
+    
+   char FileName[14]; // name of the file for export (exportToDisk)
+
 };
 
 //---------------------------------------------
@@ -72,18 +75,18 @@ class IDENT05_TABDATA {
 
   ~IDENT05_TABDATA();
 
-  Index numsigs;  // time included
-  Index sizeevalsol;
-  Number sample;
-
-   char FileName[14]; // name of the file for export (exportToDisk)
-
    bool read_extern_output(std::vector<double> &li_reals);
 
 	// similar method as IDENT05_IODATA::exportToDisk
    bool exportToDisk(std::vector<double> &li_reals);
 
 	private:
+
+  Index numsigs;  // time included
+  Index sizeevalsol;
+  Number sample;
+
+   char FileName[14]; // name of the file for export (exportToDisk)
 
 };
 

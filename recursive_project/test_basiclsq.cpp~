@@ -8,7 +8,9 @@
  *  or like this: ./test_basiclsq.exe "secondorder2_u.dat" "secondorder2_y.dat" 200
  */
 #include <math.h>
+#include "decl_iogenerate.hpp"
 #include "decl_basiclsq.hpp"
+#include "decl_optimlsq.hpp"
 #include "../include/ident05_fftdata.hpp"
 //#include "../recursive_LSQ/decl_relsq.hpp";//immport func generate_from_file:
 int generate_more_from_file(std::vector<double> &sig, int &Npty, const char * filename, int n, int m);
@@ -107,6 +109,21 @@ int main(int argc, char **argv) {
  
    flg = inst_statlsq.getParams();
    */
+   /******** do the same thing with the "manlsq" derived class ********/
+   // optim solver arguments
+   std::vector<double> dxinit;
+   dxinit.push_back(0.5);
+   dxinit.push_back(0.5);
+   std::vector<double> drhs;
+   drhs.push_back((0.9*1.2/0.17/0.17));
+   drhs.push_back((0.6*1.2/0.17/0.17));
+   std::vector<double> res;
+   res.push_back(0.0);
+   res.push_back(0.0);
+  //      IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian, std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol);
+   IDENT05_MANLSQ inst_manlsq(y_indata, u_indata, Npty, 2, 0.1, 0.5, dxinit, drhs, 2, 1e-3);
+   flg=inst_manlsq.algorithm();
+   std::cout << "instanciated MAN LSQ class \n"; 
    
    // program terminates correctly, vector ressources free-ed automaatically
    std::cout << "Instances of classes *LSQ created correctly, now terminates \n";

@@ -1,10 +1,11 @@
-#include "decl_optimlsq.hpp"
+//#include "decl_optimlsq.hpp"
+#include "decl_basiclsq.hpp"
 
-IDENT05_OPTLSQ::IDENT05_OPTLSQ(std::vector<double> xinit, std::vector<double> rhs, int ddim, double ftol) :
+IDENT05_OPTLSQ::IDENT05_OPTLSQ(std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol) :
 	theta(std::vector<double>(ddim, 0.0)),
 	xd(dxinit),
 	xinit(dxinit),
-	jacobian(std::vector<double>(ddim^2,0.0)),
+	jacobian(std::vector<double>(ddim*ddim,0.0)),
 	rhs(drhs),
 	dim(ddim),
 	tol(ftol)
@@ -20,8 +21,8 @@ IDENT05_OPTLSQ:: ~IDENT05_OPTLSQ(void)
 bool IDENT05_OPTLSQ:: fres(std::vector<double> xd, std::vector<double> &res) {
 // sum elevated to square only if needed: two counter convex func, here it is not the case
    if (dim==2) {
-      res[0] = ( rhs[0]*(xd[0]^2 + xd[1]^2 + 1) - xd[0]-xd[0]*xd[1] );
-      res[1] =  (rhs[1]*(xd[0]^2 + xd[1]^2 + 1) - xd[1]);
+      res[0] = ( rhs[0]*(xd[0]*xd[0] + xd[1]*xd[1] + 1) - xd[0]-xd[0]*xd[1] );
+      res[1] =  (rhs[1]*(xd[0]*xd[0] + xd[1]*xd[1] + 1) - xd[1]);
    }
    return 1;
 };
@@ -31,7 +32,7 @@ bool IDENT05_OPTLSQ:: Jac(std::vector<double> xd, std::vector<double> &jac) {
       jac[0] = (rhs[0])*(2*xd[0])-xd[1]-1.0;
       jac[1] = (rhs[0])*(2*xd[1])-xd[0];
       jac[2] = (rhs[1])*(2*xd[0]);
-      jac[0] = (rhs[1])*(2*xd[1])-1.0;
+      jac[3] = (rhs[1])*(2*xd[1])-1.0;
    }
    return 1;
 }

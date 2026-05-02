@@ -166,9 +166,12 @@ int main(int argc, char **argv) {
    B ib= B(2,2);
    C ic= C(3,3);
    D id= D(4);
+   std::cout << "Donnees de la classe A: " << ia.getDonnee() << std::endl;
+   std::cout << "Donnees de la classe B: " << ib.getDonnee() << std::endl;
    std::cout << "Donnees de la classe D: " << id.getDonnee() << std::endl;
 
    // test pointers
+   
    pa = &ia;
    pb = &ib;
    std::cout << "Donnees de la classe B par ptr pb: " << pb->getDonnee() << std::endl;
@@ -178,6 +181,7 @@ int main(int argc, char **argv) {
    pbd = static_cast<D *>(pb);
    std::cout << "Donnees de la classe B par ptr pd: " << pbd->getDonnee() << std::endl;
    std::cout << "We are at the end" << std::endl;
+  
    return 0;
 }
 

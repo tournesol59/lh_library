@@ -2,6 +2,7 @@
 #include <vector>
 #include <string.h>
 #include <cstring>
+#include <sstream>
 #include "../include/lhTypes.hpp"
 
 using namespace lhlib;

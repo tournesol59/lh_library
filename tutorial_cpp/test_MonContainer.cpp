@@ -14,13 +14,13 @@ int main(int argc, char **argv) {
    std::cin >> maligne;
    strncpy(chainecible, maligne.c_str(), taille);
    std::cout << "La chaine copiee dans cible : " << chainecible;
-   MonObjetDeriv instMonObj1; // = MonObjetDeriv(taille, chainecible);
+   MonObjetDeriv instMonObj1 = MonObjetDeriv(taille, chainecible);
 
    std::cout<< "Entrez une chaine de "<< taille <<" 10 caracteres" << std::endl;
    std::cin >> maligne;
    strncpy(chainecible, maligne.c_str(), taille);
    std::cout << "La chaine copiee dans cible : " << chainecible;
-   MonObjetDeriv instMonObj2; // = MonObjetDeriv(taille, chainecible);
+   MonObjetDeriv instMonObj2 = MonObjetDeriv(taille, chainecible);
 
 
    MonContainer instMonCont = MonContainer();

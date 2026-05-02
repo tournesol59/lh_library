@@ -18,8 +18,8 @@
 using namespace lhlib;
 
 int generate_rdom_example(std::vector<double> &sig, int n, double ca, double cb, double fvar);
-int generate_arN_example(std::vector<double> &sig, int n, int m, std::vector<double> &ar, double fvar) ;
-int generate_from_file(std::vector<double> &sig, int &Npty, const char * filename, int n, int m) ;
+int generate_arN_example(std::vector<double> &sig, int n, int order, double x0, std::vector<double> &ar, double fvar) ;
+int generate_from_file(std::vector<double> &sig, int &n, const char * filename) ;
 
 class IDENT05_RELSQ {
 

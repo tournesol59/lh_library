@@ -17,11 +17,16 @@ using namespace lhlib;
 int main(int argc, char ** argv) {
   char strFileName[14];
   char strCodeName[14];
+  char strSpecName[14];
 
   int lenFileName=14;
 
-  strncpy(strFileName, argv[1], 8);  // 8 < 14 but works do not touch anything!
-//  strncpy(strCodeName, argv[2], 8);  // same thing
+  strncpy(strFileName, argv[1], 10);  // 10 < 14 but works do not touch anything!
+  strncpy(strCodeName, argv[2], 10);  // same thing
+  strncpy(strSpecName, "TheSpec", 10);  // same thing
+  Index num_totalpoints;
+  num_totalpoints << int(*argv[3]);  // MANUAL
+   
 //  strFileName = "TheFile";  //prohibited, call $ ./main_example "TheFile" "TheCode"  instead
   std::cout << "Have string " << strFileName << " of length " << lenFileName << " as arg[1] and " << strCodeName << " as arg[2]\n";
 
@@ -29,35 +34,51 @@ int main(int argc, char ** argv) {
   li_doubles datafft;  // li_doubles is a list<double> container
   li_doubles datatimesol;  // idem
 
+  // param struct: todo after investigate structure into class
+  // IDENT05_OPTIONS cnOptions; // = {1,1,1,0,2,20, 0., 1.2, 1., -0.3, 1.0, 1.57,  1,7,1.,0.,0.,0.,0.,0.,0.};
   // solver class
-  IDENT05_COLL cnClassInst=IDENT05_COLL(6,strFileName,strCodeName);
+  std::cout << "Instanciate the collocation class \n"; 
+  IDENT05_COLL cnClassInst=IDENT05_COLL(6,strFileName,strCodeName,strSpecName);
 
   // data solution container and class list<T>
   char fftFileName[14];
-  strncpy(fftFileName,"fft.out", 8); //..
-  IDENT05_IODATA fftClassInst=IDENT05_IODATA(256, fftFileName);
+  strncpy(fftFileName,"fft.out", 8); //..  
+  IDENT05_IODATA fftClassInst=IDENT05_IODATA(256, 0.1, fftFileName); // size, sampling, file to read from colloc
 
   char expFileName[14];
   strncpy(expFileName,"out.bat", 8); //..
-  IDENT05_IODATA expClassInst=IDENT05_IODATA(2000, expFileName); // two signals, two thousands points
-	  
+  IDENT05_IODATA expClassInst=IDENT05_IODATA(num_totalpoints, 0.1, expFileName); // two signals
+  
   // read problem formulation:
+  std::cout << "Start the reading of data file " << strFileName << "\n";
   cnClassInst.read_parse_file();
+  std::cout << "Start the reading of codes file " << strCodeName << "\n";  
   cnClassInst.read_parse_code();
+  std::cout << "Start the collocation on each interval \n";
 
+  // iteration index
+  Index Miter=0;
 
 // If Testing: Decompose:
-  cnClassInst.ExpandSeriesLinearSys_ref1();
-  cnClassInst.SolveSeriesLinearSys_ref1();
+  //cnClassInst.ExpandSeriesLinearSys_ref1();
+  //cnClassInst.SolveSeriesLinearSys_ref1();
 // or complete auto solving:
   cnClassInst.SolveNumRangesSys_ref1();
+  
+  std::cout << "After first iteration, do the rereading of exported data " << strSpecName << "\n";  
+  //cnClassInst.read_parse_specfile();  // shall be called internally from SolveNumRangesSys_ref1
+  
+  //Miter++; // redundant: is done by the followg precedure internally:
+  cnClassInst.UpdateBoundaryIterativeSlope();
+  cnClassInst.UpdateBoundaryIterativePhase();
+  cnClassInst.SolveNumRangesSys_ref1();
 
-    // data exchange between classes
-  cnClassInst.pass_dataarray_col( 2000, datatimesol);
+  // data exchange between classes
+  cnClassInst.pass_dataarray_col( 40, datatimesol);
   //Index select[2]; //={1,2}
   expClassInst.exportToDisk(datatimesol);
 // import fft after being verified
-  fftClassInst.read_extern_output(256, datafft);
+//  fftClassInst.read_extern_output(256, datafft); // TBC
 
   return 0;
 }

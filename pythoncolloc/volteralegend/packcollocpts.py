@@ -14,6 +14,9 @@ diff_nodes[5,:]=[-0.90618,-0.53857,0.,0.53857, 0.90618, 0.,0.]
 #low precision values
 diff_nodes[6,:]=[-0.92,-0.65,-0.24,0.24,0.65,0.92, 0.]
 diff_nodes[7,:]=[-0.945,-0.74,-0.39,0.,0.39,0.74,0.945]
+##FOR DEBUG ONLY REPLACE WITH CHEB ROOT
+##diff_nodes[3,:]=[-0.7071,0.,0.7071,0.,0.,0.,0.]
+
 
 manual_Btable2=num.zeros((4,4)) #for diff_nodes[2,:]
 manual_Btable2[0,:]=[0.11706,0.6856,-1.04645,-0.21328]
@@ -53,12 +56,16 @@ class MatLagrKernel(object):
 
     def calcKernelFac(self): 
 	# must be called AFTER a Kernel has been filled
+        #print(str(self.__KM)) #debug check entry
         for l in range(0, self.__nx):
             self.__factors[l]=1.0
-            for i in range(0, l-1):
+            for i in range(0, l):   #there was an error here: WAS(l-1),IS(l)
                 self.__factors[l]=self.__factors[l]*self.__KM[l,i]
+                #print(str(self.__factors)) #debug
             for i in range(l+1, self.__nx):
                 self.__factors[l]=self.__factors[l]*self.__KM[l,i]
+                #print(str(self.__factors))  #debug
+            print("\n")
 
     def fillVarVector(self, xv):
 	# return a table (xv-xext(i))
@@ -97,20 +104,21 @@ class MatDiffPoints(object):
         self.__nx=nx
         if (param[3]=='norm'):
             for i in range(1,nx-1):	
-                self.__xext[i]=diff_nodes[nx,i]
+                self.__xext[i]=diff_nodes[nx-2,i-1]  #Eroor corrected here:nx-2
         elif (param[3]=='scal'):
             for i in range(1,nx-1):
             # formula to test: scale of nodes in interval of span 2.0 to another interval
-               self.__xext[i]=self.__xext[0]+(diff_nodes[nx,j]+1.0)/2.0*(self.__xext[nx-1]-self.__xext[0])
-
+                self.__xext[i]=self.__xext[0]+(diff_nodes[nx-2,i-1]+1.0)/2.0*(self.__xext[nx-1]-self.__xext[0]) #there was an error here WAS[nx,j], IS[nx-2,i-1]
+        print(str(self.__xext))
         self.__DM = num.zeros((2,self.__nx, self.__nx)) # nx Lagr Points leads to nx polynoms and nx eval pts
         self.__instKernel = MatLagrKernel(self.__xext,nx)
+        self.__instKernel.fillKernel()  # run this firstly
 
     def calcKernelFac(self):
         self.__instKernel.calcKernelFac()
 
     def get_factors(self):
-        self.__instKernel.calcKernelFac()
+       # self.__instKernel.calcKernelFac()  #debug
         return self.__instKernel.get_factors()
 
     def setallDiffMat(self):    
@@ -120,6 +128,7 @@ class MatDiffPoints(object):
         nxe=self.__nx
         # create a class of Lagrange points difference of size nxe=total no.pt
         #instKernel = MatLagrKernel(self.__xext,nxe)
+
         self.__instKernel.fillKernel()        
         Kernel = self.__instKernel.get_KM() # unclear of whether it is a copy
 
@@ -161,7 +170,22 @@ class MatDiffPoints(object):
     # this test is necessary to have proper derivation and also not simplification
                              alpha_jp = alpha_jp*Kernel[p,l]
                       term2_ij = term2_ij + alpha_jp
-                      self.__DM[1,i,j] = term2_ij/alphac_i
+                      self.__DM[1,i,j] = term2_ij/alphac_i 
+                      
+               else: #j==i
+                  term2_ii=0.
+                  for p in range(0,nxe): 
+                      if (p!=i):
+                          for l in range(0,nxe):
+                              if ((l!=p) and (l!=i)):
+                                  alpha_lp = 1./(Kernel[i,p]*Kernel[i,l])
+                                  term2_ii = term2_ii+alpha_lp
+                  self.__DM[1,i,i]=term2_ii
+
+              #end if i==j
+         # end forj
+ #end method setallDM() of class MatDiffPoints.
+
  #end method setallDM() of class MatDiffPoints.
 
     def __str__(self):
@@ -171,6 +195,9 @@ class MatDiffPoints(object):
             for j in range(0,nxe):
                 print(self.__DM[0,i,j]);
             print("\n")
+
+    def get_KM(self):
+        return self.__instKernel.get_KM()
 
     def get_xext(self):
         return self.__xext

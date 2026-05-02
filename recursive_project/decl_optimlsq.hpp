@@ -5,9 +5,11 @@
 #include <cstring>
 #include <vector>
 #include <list>
-#include <iterator>
+#include <iterator>
+#include <math.h>
 #include "../include/lhTypes.hpp"
 
+/*
 using namespace lhlib;
 ////////////////
 // Class Definition
@@ -18,8 +20,8 @@ using namespace lhlib;
    IDENT05_OPTLSQ &operator=(const IDENT05_OPTLSQ &source);
    ~IDENT05_OPTLSQ(void);
 
-   bool fres(std::vector<double> xd, double &res);
-   bool Jac(std::vector<double> xd, std::vector<double> &jac);
+   bool fres(std::vector<double> xd, std::vector<double> &res);
+   //bool Jac(std::vector<double> xd, std::vector<double> &jac);
    bool update(std::vector<double> xd, std::vector<double> jac, std::vector<double> res, std::vector<double> &newxd);
 
       protected:
@@ -33,3 +35,5 @@ using namespace lhlib;
    int Itermax;
    int iter;
 };
+*/
+

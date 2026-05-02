@@ -1,11 +1,10 @@
-//#include "MathFunctions.h"
+#include "MathFunctions.h"
 #include <stdio.h>
 #include <malloc.h>
 // does not work in MinGW:
-//#include "/home/Utilisateur/lapack-3.8.0/LAPACKE/include/lapacke.h"
 // use instead:
-#include "../../lapack-3.8.0/LAPACKE/include/lapacke.h"
-
+//#include "../include/ident05_coll.hpp" // NO
+#include "../../lapack_inst/include/lapacke.h"  // fred: now the full path is passed at compiling with Makefiles
 
 //#define SIZE 9
 int mySolveLinearLapack(int n, int rhs, double * A, int lda, int * ipiv, double * B, int ldb, int info) {

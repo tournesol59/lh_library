@@ -22,14 +22,13 @@ int main(int argc, char **argv) {
    std::cout << "La chaine copiee dans cible : " << chainecible;
    MonObjetDeriv instMonObj2; // = MonObjetDeriv(taille, chainecible);
 
- /*
+
    MonContainer instMonCont = MonContainer();
    instMonCont.add( instMonObj1 );
    instMonCont.add( instMonObj2 );
    instMonCont.print(); // print the list of Objects in the "Bag" (container) 
    instMonCont.remove( instMonObj2 );
    instMonCont.print();
-  */
 
    return 0;
 }

@@ -1,10 +1,11 @@
 // complement of impl_basicrelsq.cpp, implements methods of the class
 // IDENT05_MANLSQ
 
-#include "impl_basiclsq.hpp"
+#include "decl_basiclsq.hpp"
 
 // this constructor inherits from two different base classes
- IDENT05_MANLSQ::IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian, std::vector<double> dxinit, std::vector<double> drhs, ddim, ftol) : IDENT05_ABSLSQ(ydata, udata, dsize, dna, fTs, fvarian) , IDENT05_OPTLSQ(dxinit, drhs, ddim, ftol)
+//
+ IDENT05_MANLSQ::IDENT05_MANLSQ(std::vector<double> ydata, std::vector<double> udata, int dsize, int dna, double fTs, double fvarian, std::vector<double> dxinit, std::vector<double> drhs, int ddim, double ftol) : IDENT05_ABSLSQ(ydata, udata, dsize, dna, fTs, fvarian) , IDENT05_OPTLSQ(dxinit, drhs, ddim, ftol)
  
 {
    for (int i=0; i<dim; i++) {
@@ -13,7 +14,25 @@
    }
 }
 
- IDENT05_MANLSQ::IDENT05_MANLSQ(const IDENT05_MANLSQ &source) : IDENT05_ABSLSQ(source),  IDENT05_OPTLSQ(source)
+ IDENT05_MANLSQ::IDENT05_MANLSQ(const IDENT05_MANLSQ &source) :
+
+	 /*
+	size(source.size),
+	y(source.y),
+	u(source.u),
+	yhat(source.yhat),
+	dim(source.dim),
+	na(source.na),
+	nb(source.nb),
+	Ts(source.Ts),
+	varian(source.varian),
+        theta(source.theta),
+	xd(source.xd),
+	xinit(source.xinit),
+	jacobian(source.jacobian),
+	rhs(source.rhs),
+	tol(source.tol)
+        */
 {
 	
 }
