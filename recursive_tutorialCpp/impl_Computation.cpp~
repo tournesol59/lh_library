@@ -1,0 +1,110 @@
+#include "decl_Computation.hpp"
+
+ComputationBase:: ComputationBase(std::vector<double> fcoeff, int dn, int dNum) :
+   data_y(std::vector<double>(dNum, 0.0)),
+   pred_y(std::vector<double>(dNum, 0.0)),
+   n(dn),
+   Num(Num)
+{
+   for (int i=0; i<n; i++) {
+      coeff.push_back(fcoeff[i]);
+   }
+   gaink.push_back(1.0);
+}
+// copy constructors
+ComputationBase:: ComputationBase(const ComputationBase &src) :
+   data_y(src.data_y),
+   pred_y(src.pred_y)//,
+ //  n(src.n),
+ //  Num(src.Num)
+{
+   n=src.n;
+   Num=src.Num;
+   for (int i=0; i<src.n; i++) {
+      coeff.push_back(src.coeff[i]);
+   }
+   gaink.push_back(src.gaink[0]);
+}
+
+ComputationBase &ComputationBase:: operator=(const ComputationBase &src) :
+   n(src.n),
+   Num(src.Num)
+{
+   /*
+   for (int i=0; i<src.n; i++) {
+      coeff.push_back(src.coeff[i]);
+   }
+   gaink.push_back(src.gaink[0]);
+   */
+}
+
+ComputationBase:: ~ComputationBase(void) {};
+
+void ComputationBase:: scandata() 
+{
+   double invalue;
+   for (int i=0; i<Num; i++) {
+      std::cout << "Entrez un nombre flottant" << endl;
+      std::cin >> invalue;
+      data_y.push_back(invalue);
+   }
+}
+
+int ComputationBase:: predict(int k) {
+   double sum=0.;
+   // do the mean instead or AR(n), temporary
+   for (int i=0; i<k; i++) {
+      sum += data_y[i]; 
+   }
+   curr_yest = sum/k;
+   return 0;
+}
+
+int ComputationBase:: innovation() {
+  // nothing here
+  return 0;
+}
+
+int ComputationBase:: update() {
+  // nothing here
+  return 0;
+}
+
+int ComputationBase:: recursive(int k) {
+   predict(k);
+   innovation();
+   update();
+   return 0;
+}
+
+/*********** Extended Class ***********/
+ComputationExtended:: ComputationExtended(std::vector<double> fcoeff, int dn, int dNum) : ComputationBase(fcoeff, dn, dNum),
+   data_y(std::vector<double>(dNum, 0.0)),
+   pred_y(std::vector<double>(dNum, 0.0)),
+   n(dn),
+   Num(Num)
+{
+
+}
+
+// copy constructors
+ComputationExtended:: ComputationExtended(const ComputationExtended &src) : ComputationBase(src),
+   data_y(src.data_y),
+   pred_y(src.pred_y),
+   n(src.n),
+   Num(src.Num)
+{
+}
+
+ComputationExtended &ComputationExtended:: operator=(const ComputationExtended &src)
+{
+}
+
+ComputationExtended:: ~ComputationExtended(void) {};
+
+int ComputationExtended:: predict(int k) {
+//   double sum=0.;
+  epsilon = data_y[k] - curr_yest;
+  return 0;
+}
+

@@ -1,0 +1,3 @@
+what has been done in 27th sept 2023
+-correction of one error in packcollocpts: index ends at n-1 in for (n) loops
+

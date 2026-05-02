@@ -1,0 +1,59 @@
+#include <iostream>
+#include <cstring>
+#include <vector>
+#include <list>
+#include <iterator>
+// fred: exemple pour tester l interet d une methode virtuelle, ici le cas de predict
+//using namespace std;
+
+class ComputationBase  {
+
+   public:
+       ComputationBase(std::vector<double> fcoeff, int dn, int dNum);
+       ComputationBase(const ComputationBase &src);
+       ComputationBase &operator=(const ComputationBase &src);
+       ~ComputationBase(void);
+
+// only a demonstration, the methods update() will only do something constant
+       void scandata();
+       virtual int predict(int k);
+       int innovation();
+       int update(); // shall call predict() itself
+       int recursive(int k);
+
+   protected:
+       int Num;
+       std::vector<double> data_y;
+       std::vector<double> pred_y;
+       double curr_yest;
+       double epsilon;
+
+       int n;
+       std::vector<double> coeff;
+       std::vector<double> gaink;
+};
+
+// this class will implement a batch-form of the mean calculation
+class ComputationExtended : ComputationBase {
+
+   public:
+       ComputationExtended(std::vector<double> fcoeff, int dn, int dNum);
+       ComputationExtended(const ComputationExtended &src);
+       ComputationExtended &operator=(const ComputationExtended &src);
+       ~ComputationExtended(void);
+
+       int predict(int k);
+       
+   protected:
+       int Num;
+       std::vector<double> data_y;
+       std::vector<double> pred_y;
+       double curr_yest;
+       double epsilon;
+
+       int n;
+       std::vector<double> coeff;
+       std::vector<double> gaink;
+
+};
+

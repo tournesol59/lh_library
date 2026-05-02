@@ -1,0 +1,20 @@
+CC=/c/MinGW/bin/mingw32-g++
+CANSI=/c/MinGW/bin/mingw32-gcc
+CXXFLAGS= -std=c++11 -Wall -O2
+CANSIFLAGS= -Wall
+
+OBJS= tseries.o \
+     test_tseries.o
+
+LOADER=/c/MinGW/bin/mingw32-g++
+
+tseries.o: tseries.cpp
+	${CC} ${CXXFLAGS} -o tseries.o -c $<
+
+test_tseries.o: test_tseries.cpp
+	${CC} ${CXXFLAGS} -o test_tseries.o -c $<
+
+main: ${OBJ}
+	${CC} ${CXXFLAGS} -o test_tseries_A ${OBJS}
+
+

@@ -1,0 +1,34 @@
+#include "lapacke.h"
+#include "malloc.h"
+
+// declaration:
+void cgemv(character trans, integer m, integer n, complex alpha, complex, dimension(lda,*) a, integer lda, complex, dimension(*) x, integer incx, complex beta, complex, dimension(*)	y, integer incy );
+
+
+int computeMatVecProduct(Index n, Number* A, Number* X, Number* Y) {
+//!>    y := alpha*A*x + beta*y,   or   y := alpha*A**T*x + beta*y,   or
+//!>
+//!>    y := alpha*A**H*x + beta*y,
+  cgemv('N', n, n, 1.0, A, n, X, 1, 0.0, Y, 1);
+  retrun 0;
+
+}
+
+int solveLinearSymmetricLapack(Index n, Number* A, Index lda, Number* Y, Number *X)
+{
+	// solve A*X=Y as vector, A is squared symmetric
+
+    int i;
+    lapack_int N=n;
+    lapack_int RHS=1;
+    lapack_int LDA=lda;
+    lapack_int LDB=lda;
+    lapack_int INFO;
+    X = (double*) malloc(lda*sizeof(double));
+    for (int i=0; i < n; i++) {
+       X[i] = Y[i];  //copy
+    }
+//DPOSV
+    INFO = LAPACKE_dposv( LAPACK_COL_MAJOR, "D", N, RHS, A, LDA, X, LDB );
+    return 0;
+}

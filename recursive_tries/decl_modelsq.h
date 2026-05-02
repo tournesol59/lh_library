@@ -1,0 +1,44 @@
+/* demonstration methodes virtuelles pour definir une methode de IdentA fa
+ * qui appelle une autre methode ga et ga est surchargee dans 
+ * IdentB::IdentA. Si on ne fait rien IdentB::fa va appeler ga de la class mere
+ */
+
+/* et d'abord definition d'une class mere vide MODELSQ dont vont heriter deux classes filles au sens heritage d'une classe abstaite (que des methodes pure virtuelle) en cpp: une qui sera utilisee par un main cpp, une autre en cpp aussi maisn utilisant que des objets compatibles C
+ */
+
+#include <iostream>
+#include <cstring>
+#include <vector>  // for pass_iodata
+#include "../include/lhTypes.hpp"
+#include "../recursive_project/decl_matrixop.h"
+#include "../recursive_project/decl_vectorop.h"
+
+/* ------- extern C functions --------*/
+
+//extern "C" void c_addvector(c_vectorop *bvec);
+
+
+/* ------- class IDENT05_MODELSQ ------*/
+// la classe abstraite
+  class IDENT05_MODELSQ {
+	  // fred: les 3 constructeurs: que des objets primitifs ou definis anonomes en argument (pas de vector)
+     public:
+   IDENT05_MODELSQ(vectorop yvalues, int dsize, int dn);
+   IDENT05_MODELSQ(const IDENT05_MODELSQ &source);
+   IDENT05_MODELSQ &operator=(const IDENT05_MODELSQ &source);
+   ~IDENT05_MODELSQ();
+
+   virtual void setphivalues(int ind)=0; 
+   virtual void predict(int ind)=0; // pure virtual methof only overriding from derived class can call it
+   virtual void innovation(int ind, double &epsilon)=0;
+   virtual void update(int ind)=0;
+     protected:
+   vectorop y;     
+   int size; // size of vector y
+   int n; // size of vector coeffs and unique column-matrixK
+};
+
+/*-------- class IDENT05_MODELSQ_INT -------*/
+// ne prsente pas de difficultes, regarder les fichiers decl_basislsq dans recursive_project
+
+

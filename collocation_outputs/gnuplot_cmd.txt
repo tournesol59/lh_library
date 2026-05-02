@@ -1,0 +1,17 @@
+FRED: (as README for collocation) thee shall be a third parameter in command
+line it is the number of evaluation points
+./main_example.exe TheFile TheCode 40
+
+generates 3 outputFiles:
+ - TheSpec (coeffs for each inteval)
+ - TheTest (evaluation)
+ - out.bat (same as evaluation, duplicate)
+
+#gnuplot for plotting control input (TheFile) versus simulation (collocation) output (TheTest):
+#in collocation directory:
+plot "./TheFile" using 2 with points, "./TheTest" using 2 with lines
+
+#if a simulation output reference is also present in the input File:
+plot "./TheFile" using 3 with points, "./TheTest" using 2 with lines
+
+plot 'TheFile16.csv' using ($1):(cos(4*$1)) with lines

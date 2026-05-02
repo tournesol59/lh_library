@@ -1,0 +1,16 @@
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+
+int main(int argc, const char **argv) {
+   int row=3;
+   struct { int quot; int rem; } dv;
+
+   dv.quot = row;
+
+   dv.rem = (int) (row -2*(floor(dv.quot/2.0))); // hacked
+   std::cout << "result of division of row by two: " << dv.rem << "\n";
+    
+   return 0;
+   }

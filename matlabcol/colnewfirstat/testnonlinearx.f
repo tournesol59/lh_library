@@ -1,0 +1,63 @@
+! TEST PROGRAM FOR COLNEW.F SUBROUTINES PACK FOR COLLOCATION
+! PROBLEM DATA MEM AREA 'COMMON' ARE USED: HOW TO HAVE ACCESS TO THEM
+! IF WE ARE ONLY INTERESTED BY A SINGLE SUBROUTINE?
+! BUT FIRST CALL TO COLNEW (TOP SUBROUTINE)
+
+PROGRAM TESTNONLINEARX
+!  IMPLICIT NONE  ! not applieable especially for that kind of fortran norm
+                  ! where all variables of names(A-H:O-Z) are implicit
+      IMPLICIT REAL*8 (A-H,O-Z)
+      DIMENSION M(1), ZETA(1), IPAR(1), LTOL(1), TOL(1), DUMMY(1),
+     1          FIXPNT(1), ISPACE(1), FSPACE(1)
+
+!    sum of M(I) is called mstar, the no of states
+!    ZETA(j) contains the BV at point j of fixedpoint
+!    IPAR(1)=0 means prob is linear, IPAR(2)=k no collocation pts per 
+!       subinterval, all in all IPAR has 11 parameters, see colnew.f
+!    LTOL(j)=l: means the l-th element of state vector z(u) bounded by 
+!       tolerance (see next)
+!    TOL(j): means abs(z(u)-z(v)),l-th .le. tol(j)*abs(z(u)),l-th
+!    DUMMY is an array, which is also transmitted to sub APPROX
+!       (evaluation of state vector at x), whose following snippets are
+!        extracted and where DUMMY is renamed 'DMVAL':
+      !:     DO 160 JCOMP = 1, NCOMP
+      !:     DMVAL(JCOMP) = DMVAL(JCOMP)  +  FACT * DMZ(IDMZ)
+      !:      IDMZ = IDMZ + 1
+      !:160    CONTINUE
+!    FIXPNT (dim of this array of side conditions points is IPAR(11))i
+!    ISPACE (let us do inquire in what functions this array of int is used..
+!    FSPACE (same thing as ispace but real double are in that array..)
+
+! block memory:
+      COMMON /COLOUT/ PRECIS, IOUT, IPRINT
+      COMMON /COLLOC/ RHO(7), COEF(49)
+      COMMON /COLORD/ K, NC, MSTAR, KD, MMAX, MT(20)
+      COMMON /COLAPR/ N, NOLD, NMAX, NZ, NDMZ
+      COMMON /COLMSH/ MSHFLG, MSHNUM, MSHLMT, MSHALT
+      COMMON /COLSID/ TZETA(40), TLEFT, TRIGHT, IZETA, IDUM
+      COMMON /COLNLN/ NONLIN, ITER, LIMIT, ICARE, IGUESS
+      COMMON /COLEST/ TTL(40), WGTMSH(40), WGTERR(40), TOLIN(40),
+     1                ROOT(40), JTOL(40), LTTOL(40), NTOL
+C
+      EXTERNAL FSUB, DFSUB, GSUB, DGSUB, GUESS
+C
+!      COMMON /COLOUT/ PRECIS, IOUT, IPRINT
+!        
+!      COMMON /COLORD/ K, NCOMP, MSTAR, KD, MMAX, M(20)
+!      COMMON /COLAPR/ N, NOLD, NMAX, NZ, NDMZ
+!      COMMON /COLMSH/ MSHFLG, MSHNUM, MSHLMT, MSHALT
+!      COMMON /COLNLN/ NONLIN, ITER, LIMIT, ICARE, IGUESS
+!      COMMON /COLSID/  ZETA(40), ALEFT, ARIGHT, IZETA, IDUM
+!      COMMON /COLBAS/ B(28), ACOL(28,7), ASAVE(28,4)
+!      COMMON /COLEST/ TOL(40), WGTMSH(40), WGTERR(40), TOLIN(40),
+!     1                ROOT(40), JTOL(40), LTOL(40), NTOL
+
+!  subroutine to be tested:
+!
+!      SUBROUTINE NEWMSH (MODE, XI, XIOLD, Z, DMZ, VALSTR,
+!     1                   SLOPE, ACCUM, NFXPNT, FIXPNT)
+!
+!      the mode 3 will be tested (simplest) a NEW uniform mesh is defined
+!
+
+END PROGRAM TESTNONLINEARX
