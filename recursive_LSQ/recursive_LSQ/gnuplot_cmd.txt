@@ -1,0 +1,5 @@
+#gnuplot for plotting control input (a.rand) versus estimation (recursive 1st)
+output (a.lsqo):
+#in recursive_LSQ directory:
+plot "./a.rand" using 2 with points, "./a.lsqo" using 2 with lines
+

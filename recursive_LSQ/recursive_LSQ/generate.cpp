@@ -32,7 +32,6 @@ int generate_rdom_example( vector<double> &sig, int n, double ca, double cb, dou
   return 1;
 }
 
-
 int generate_arN_example(std::vector<double> &sig, int n,
 		     int order, double x0, std::vector<double> &ar, double fvar)
 {
@@ -83,3 +82,5 @@ int generate_from_file(std::vector<double> &sig, int &n,
    }
    return 1;
 }
+
+

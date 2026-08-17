@@ -32,7 +32,6 @@ int generate_rdom_example( vector<double> &sig, int n, double ca, double cb, dou
   return 1;
 }
 
-
 int generate_arN_example(std::vector<double> &sig, int n,
 		     int order, double x0, std::vector<double> &ar, double fvar)
 {
@@ -71,7 +70,7 @@ int generate_from_file(std::vector<double> &sig, int &n,
   // use the method of the related class IODATA declared in ../include/ident05_fftdata.hpp
    IDENT05_IODATA instIODATA = IDENT05_IODATA(100, 1, fileName) ;
    instIODATA.read_extern_output(2, li_reals);
-   std::cout << "size " << li_reals.size() << "\n";  // DEBUG
+   std::cout << "size " << li_reals.size() << "\n";
   // recopy .. it seems not practical to have a vector instead a li_doubles however
    n=1;
    for (auto it=li_reals.begin(); it != li_reals.end(); it++) {
@@ -83,3 +82,5 @@ int generate_from_file(std::vector<double> &sig, int &n,
    }
    return 1;
 }
+
+

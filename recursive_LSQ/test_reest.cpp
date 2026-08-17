@@ -9,14 +9,11 @@ using namespace lhlib;
 int main() {
   const int Npty = 30;
   int k;
-  dpair singleton;
-  std::vector<double> ctldata, outdata;
+  //dpair singleton;//deprecated
+  std::pair<double,double> singleton;
+  std::vector<double> outdata;
+  std::vector<double> ctldata(Npty, 0.0); //zero ctl
   li_doubles datalist, estoutlist;  // exchange list of doubles
-
-  // zero ctl
-  for (k=0; k<Npty; k++) {
-     ctldata.push_back(0.0);
-  }
 
   // generate Npty points over line 0.8+0.0533*t, t=1...n, added with randoms numbers
   // between -0.5 and 0.5
@@ -25,22 +22,21 @@ int main() {
   // export class
   char expFileName[14];
   strncpy(expFileName, "a.rand", 7);
-  IDENT05_IODATA expClassInst=IDENT05_IODATA(Npty, expFileName);
+  IDENT05_IODATA expClassInst=IDENT05_IODATA(Npty, 0.1, expFileName);
 
   // copy data into list and save to Disk
   k=0; 
   for (auto it=outdata.begin(); it != outdata.end(); it++) {
-     singleton.x = (double (k))/10.0;
-     singleton.y = (*it);
+     singleton.first = (double (k))/10.0;
+     singleton.second = (*it);
      datalist.push_back( singleton );
      std::cout << (*it) << " ";
      k++;
   }
   std::cout << "\n";
   expClassInst.exportToDisk(datalist);
-
   //create recursive intrument estimation class (FVE)
-  reestClassInst=IDENT05_REEST(ydata, udata, dsize, dn1, dn2, dr, fTs, fvar_phi, fvar_y);
+  IDENT05_REEST reestClassInst=IDENT05_REEST(outdata, ctldata, Npty, 1, 1, 1, 0.1, 0.5, 0.5);
      // create child class of transfer functions
 
      // ...
@@ -61,12 +57,12 @@ int main() {
   //create another export class
   char expvarFileName[14];
   strncpy(expvarFileName, "a.lsqo", 7);
-  IDENT05_IODATA expvarClassInst=IDENT05_IODATA(Npty, expvarFileName);
+  IDENT05_IODATA expvarClassInst=IDENT05_IODATA(Npty, 0.1, expvarFileName);
 
   // copy output data into list for export
   std::string str_data="yst0";
   reestClassInst.pass_iodata(estoutlist, str_data);
-  explsqClassInst.exportToDisk(estoutlist);
+  expvarClassInst.exportToDisk(estoutlist);
 	
   return 0;
 }
